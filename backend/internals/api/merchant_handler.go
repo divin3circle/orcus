@@ -30,6 +30,12 @@ func (mh *MerchantHandler) GetMerchantById(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	fmt.Fprintf(w, "MerchantId: %v", merchantId)
+	_, _ = fmt.Fprintf(w, "MerchantId: %v", merchantId)
 
 }
+
+func (mh *MerchantHandler) CreateMerchant(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (mh *MerchantHandler) GetMerchantWithdrawalHistory(w http.ResponseWriter, r *http.Request) {}

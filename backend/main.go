@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"github.com/divin3circle/orcus/backend/internals/app"
@@ -15,6 +16,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	defer func(DB *sql.DB) {
+		err := DB.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(orcus.DB)
 
 	var port int
 	flag.IntVar(&port, "port", orcus.Port, "backend sever port")
