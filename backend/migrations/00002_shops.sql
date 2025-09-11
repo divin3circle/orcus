@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE IF NOT EXISTS shop (
+CREATE TABLE IF NOT EXISTS shops (
     id BIGSERIAL PRIMARY KEY,
     -- merchant id
     name VARCHAR(50) UNIQUE NOT NULL,
@@ -13,5 +13,5 @@ CREATE TABLE IF NOT EXISTS shop (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE stores;
+DROP TABLE shops;
 -- +goose StatementEnd

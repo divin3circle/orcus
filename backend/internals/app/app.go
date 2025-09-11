@@ -3,25 +3,28 @@ package app
 import (
 	"database/sql"
 	"fmt"
-	"github.com/divin3circle/orcus/backend/internals/api"
-	"github.com/divin3circle/orcus/backend/internals/store"
-	"github.com/divin3circle/orcus/backend/migrations"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/divin3circle/orcus/backend/internals/api"
+	"github.com/divin3circle/orcus/backend/internals/store"
+	"github.com/divin3circle/orcus/backend/migrations"
+	"github.com/joho/godotenv"
 )
 
 // Resources to be used around the application
 // 1. Hiero Hashgraph client
 // 2. Logger
 // 3. Postgres Database
+// 4. Handlers
 
 type Application struct {
 	Logger          *log.Logger
 	Port            int
 	MerchantHandler *api.MerchantHandler
+	ShopHandler     *api.ShopHandler
 	DB              *sql.DB
 }
 
@@ -57,14 +60,17 @@ func NewApplication() (*Application, error) {
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
 	// stores
+	shopStore := store.NewPostgresShopStore(pgDB)
 
 	// handlers
 	mh := api.NewMerchantHandler()
+	sh := api.NewShopHandler(shopStore)
 
 	app := &Application{
 		Logger:          logger,
 		Port:            port,
 		MerchantHandler: mh,
+		ShopHandler:     sh,
 		DB:              pgDB,
 	}
 	return app, nil

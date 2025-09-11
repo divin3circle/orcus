@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS campaigns (
     id BIGSERIAL PRIMARY KEY,
-    store_id BIGINT NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    shop_id BIGINT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
     name VARCHAR(50) UNIQUE NOT NULL,
     token_id VARCHAR(13),
     description TEXT,

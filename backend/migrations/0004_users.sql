@@ -1,16 +1,16 @@
--- goose Up
--- goose StatementBegin
+-- +goose Up
+-- +goose StatementBegin
 
 CREATE TABLE  IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY NOT NULL,
-    username VARCHAR(50),
-    mobile_number VARCHAR(13),
-    hashed_password VARCHAR(255),
-    account_id VARCHAR(100),
-    profile_image_url VARCHAR(2048),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ
+                                      id BIGSERIAL PRIMARY KEY NOT NULL,
+                                      username VARCHAR(50),
+                                      mobile_number VARCHAR(13),
+                                      hashed_password VARCHAR(255),
+                                      account_id VARCHAR(100),
+                                      profile_image_url VARCHAR(2048),
+                                      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                                      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                                      deleted_at TIMESTAMPTZ
 );
 
 -- Trigger function to auto-update updated_at
@@ -24,7 +24,7 @@ $$ LANGUAGE plpgsql;
 
 -- Attach trigger to merchants table
 CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON merchants
+    BEFORE UPDATE ON users
     FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 -- +goose StatementEnd
