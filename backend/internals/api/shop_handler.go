@@ -31,7 +31,20 @@ func (sh *ShopHandler) HandlerGetShopByID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, _ = fmt.Fprintf(w, "Shop ID: %d", shopID)
+	shop, err := sh.ShopStore.GetShopByID(shopID)
+	if err != nil {
+		fmt.Printf("Error getting shop by id: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(shop)
+	if err != nil {
+		fmt.Printf("Error encoding shop: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }
 
 func (sh *ShopHandler) HandlerCreateShop(w http.ResponseWriter, r *http.Request) {

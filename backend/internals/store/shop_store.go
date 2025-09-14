@@ -37,6 +37,7 @@ func NewPostgresShopStore(db *sql.DB) *PostgresShopStore {
 type ShopStore interface {
 	CreateShop(shop *Shop) (*Shop, error)
 	GetShopByID(id int64) (*Shop, error)
+	UpdateShop(*Shop) error
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -85,6 +86,43 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 
 func (pg *PostgresShopStore) GetShopByID(id int64) (*Shop, error) {
 	shop := &Shop{}
-	// temp sol to satisfy shop store interface
+	query := `
+	SELECT id, name, payment_id, profile_image_url
+	FROM shops
+	WHERE id = $1
+	`
+	err := pg.db.QueryRow(query, id).Scan(&shop.ID, &shop.Name, &shop.PaymentID, &shop.ProfileImageUrl)
+	if err == sql.ErrNoRows{
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	campaignQuery := `
+	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url
+	FROM campaigns
+	WHERE shop_id = $1
+	ORDER BY target_tokens DESC
+	`
+	campaigns, err := pg.db.Query(campaignQuery, id)
+	if err != nil {
+		return nil, err
+	}
+	defer campaigns.Close()
+
+	for campaigns.Next(){
+		var campaign CampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl)
+		if err != nil {
+			return nil, err
+		}
+		shop.Campaigns = append(shop.Campaigns, campaign)
+	}
+
 	return shop, nil
+}
+
+func (pg *PostgresShopStore) UpdateShop(shop *Shop) error {
+	return  nil
 }
