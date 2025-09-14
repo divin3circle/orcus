@@ -1,6 +1,10 @@
 package store
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/google/uuid"
+)
 
 type Shop struct {
 	ID              int64           `json:"id"`
@@ -43,14 +47,16 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 	}
 
 	defer tx.Rollback()
+	
+	paymentId := uuid.NewString();
 
 	query :=
-		`INSERT INTO shops (name, profile_image_url)
-		VALUES ($1, $2)
+		`INSERT INTO shops (name, payment_id, profile_image_url)
+		VALUES ($1, $2, $3)
 		RETURNING id
 	`
 
-	err = tx.QueryRow(query, shop.Name, shop.ProfileImageUrl).Scan(&shop.ID)
+	err = tx.QueryRow(query, shop.Name, paymentId, shop.ProfileImageUrl).Scan(&shop.ID)
 
 	if err != nil {
 		return nil, err
