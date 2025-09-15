@@ -124,5 +124,57 @@ func (pg *PostgresShopStore) GetShopByID(id int64) (*Shop, error) {
 }
 
 func (pg *PostgresShopStore) UpdateShop(shop *Shop) error {
-	return  nil
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	query := `
+	UPDATE shops
+	SET name = $1, profile_image_url = $2
+	WHERE id = $3
+	`
+
+	result, err := tx.Exec(query, shop.Name, shop.ProfileImageUrl, shop.ID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	_, err = tx.Exec(`
+	DELETE FROM campaigns
+	WHERE shop_id = $1
+	`, shop.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, campaign := range shop.Campaigns {
+		query := `
+		INSERT INTO campaigns (shop_id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id
+		`
+		_, err = tx.Exec(query, shop.ID, campaign.Name, campaign.TokenID, campaign.Description, campaign.Target, campaign.Distributed, campaign.Ended, campaign.Icon, campaign.BannerImageUrl)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
