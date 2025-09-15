@@ -2,15 +2,15 @@
 -- +goose StatementBegin
 
 CREATE TABLE  IF NOT EXISTS users (
-                                      id BIGSERIAL PRIMARY KEY NOT NULL,
-                                      username VARCHAR(50),
-                                      mobile_number VARCHAR(13),
-                                      hashed_password VARCHAR(255),
-                                      account_id VARCHAR(100),
-                                      profile_image_url VARCHAR(2048),
-                                      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-                                      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-                                      deleted_at TIMESTAMPTZ
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    username VARCHAR(50),
+    mobile_number VARCHAR(13),
+    hashed_password VARCHAR(255),
+    account_id VARCHAR(100),
+    profile_image_url VARCHAR(2048),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ
 );
 
 -- Trigger function to auto-update updated_at
