@@ -64,7 +64,7 @@ func NewApplication() (*Application, error) {
 
 	// handlers
 	mh := api.NewMerchantHandler()
-	sh := api.NewShopHandler(shopStore)
+	sh := api.NewShopHandler(shopStore, logger)
 
 	app := &Application{
 		Logger:          logger,
