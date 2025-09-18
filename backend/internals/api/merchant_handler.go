@@ -51,7 +51,6 @@ func (mh *MerchantHandler) HandleGetMerchantByUsername(w http.ResponseWriter, r 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"merchant": merchant})
 }
 
-
 func (mh *MerchantHandler) HandleCreateMerchant(w http.ResponseWriter, r *http.Request){
 	var req RegisterRequest
 
