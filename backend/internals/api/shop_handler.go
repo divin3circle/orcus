@@ -2,50 +2,40 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/divin3circle/orcus/backend/internals/store"
-	"github.com/go-chi/chi/v5"
+	"github.com/divin3circle/orcus/backend/internals/utils"
 )
 
 type ShopHandler struct{
 	ShopStore store.ShopStore
+	Logger *log.Logger
 }
 
-func NewShopHandler(shopStore store.ShopStore) *ShopHandler {
-	return &ShopHandler{ShopStore: shopStore}
+func NewShopHandler(shopStore store.ShopStore, logger *log.Logger) *ShopHandler {
+	return &ShopHandler{ShopStore: shopStore, Logger: logger}
 }
 
 func (sh *ShopHandler) HandlerGetShopByID(w http.ResponseWriter, r *http.Request) {
-	paramsShopID := chi.URLParam(r, "id")
-	if paramsShopID == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	shopID, err := strconv.ParseInt(paramsShopID, 10, 64)
+	shopID, err := utils.ReadIDParam(r, "id")
 	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	shop, err := sh.ShopStore.GetShopByID(shopID)
 	if err != nil {
-		fmt.Printf("Error getting shop by id: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
+		sh.Logger.Printf("ERROR: error getting shop by id GetShopByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(shop)
-	if err != nil {
-		fmt.Printf("Error encoding shop: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": shop})
 }
 
 func (sh *ShopHandler) HandlerCreateShop(w http.ResponseWriter, r *http.Request) {
@@ -53,49 +43,39 @@ func (sh *ShopHandler) HandlerCreateShop(w http.ResponseWriter, r *http.Request)
 
 	err := json.NewDecoder(r.Body).Decode(&shop)
 	if err != nil {
-		fmt.Printf("Error decoding shop: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sh.Logger.Printf("ERROR: error decoding shop Decode: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
 
 	createdShop, err := sh.ShopStore.CreateShop(&shop)
 	if err != nil {
-		fmt.Printf("Error creating shop: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sh.Logger.Printf("ERROR: error creating shop CreateShop: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdShop)
-	if err != nil {
-		fmt.Printf("Error encoding shop: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": createdShop})
 }
 
 func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request) {
-	paramsShopID := chi.URLParam(r, "id")
-	if paramsShopID == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	shopID, err := strconv.ParseInt(paramsShopID, 10, 64)
+	shopID, err := utils.ReadIDParam(r, "id")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
 
 	existingShop, err := sh.ShopStore.GetShopByID(shopID)
 	if err != nil {
-		fmt.Printf("Error getting existing shop by id: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		sh.Logger.Printf("ERROR: error getting existing shop by id GetShopByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
 
 	if existingShop == nil {
-		w.WriteHeader(http.StatusNotFound)
+		sh.Logger.Printf("ERROR: error getting existing shop by id GetShopByID, existing shop is nil: %v", err)
+		utils.WriteJSON(w, http.StatusNotFound, utils.Envelope{"error": "shop not found"})
 		return
 	}
 
@@ -107,9 +87,8 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 
 	err = json.NewDecoder(r.Body).Decode(&updateShopRequest)
 	if err != nil {
-		fmt.Printf("Error decoding update shop request: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		w.WriteHeader(http.StatusBadRequest)
+		sh.Logger.Printf("ERROR: error decoding update shop request Decode: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
 	
@@ -127,17 +106,10 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 
 	err = sh.ShopStore.UpdateShop(existingShop)
 	if err != nil {
-		fmt.Printf("Error updating shop: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sh.Logger.Printf("ERROR: error updating shop UpdateShop: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(existingShop)
-	if err != nil {
-		fmt.Printf("Error encoding shop: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": existingShop})
 }

@@ -61,10 +61,11 @@ func NewApplication() (*Application, error) {
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
 	// stores
 	shopStore := store.NewPostgresShopStore(pgDB)
+	merchantStore := store.NewPostgresMerchantStore(pgDB)
 
 	// handlers
-	mh := api.NewMerchantHandler()
-	sh := api.NewShopHandler(shopStore)
+	mh := api.NewMerchantHandler(merchantStore, logger)
+	sh := api.NewShopHandler(shopStore, logger)
 
 	app := &Application{
 		Logger:          logger,
