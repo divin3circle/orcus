@@ -9,10 +9,11 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/health", orcus.HealthCheck)
-	r.Get("/merchants/{id}", orcus.MerchantHandler.GetMerchantById)
+	r.Get("/merchants/{username}", orcus.MerchantHandler.HandleGetMerchantByUsername)
 	r.Get("/shops/{id}", orcus.ShopHandler.HandlerGetShopByID)
 
 	r.Post("/shops", orcus.ShopHandler.HandlerCreateShop)
+	r.Post("/register", orcus.MerchantHandler.HandleCreateMerchant)
 
 	r.Put("/shops/{id}", orcus.ShopHandler.HandlerUpdateShop)
 	return r

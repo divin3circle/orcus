@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 
 	"github.com/google/uuid"
 )
@@ -48,8 +49,8 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 	}
 
 	defer tx.Rollback()
-	
-	paymentId := uuid.NewString();
+
+	paymentId := uuid.NewString()
 
 	query :=
 		`INSERT INTO shops (name, payment_id, profile_image_url)
@@ -92,7 +93,7 @@ func (pg *PostgresShopStore) GetShopByID(id int64) (*Shop, error) {
 	WHERE id = $1
 	`
 	err := pg.db.QueryRow(query, id).Scan(&shop.ID, &shop.Name, &shop.PaymentID, &shop.ProfileImageUrl)
-	if err == sql.ErrNoRows{
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -111,7 +112,7 @@ func (pg *PostgresShopStore) GetShopByID(id int64) (*Shop, error) {
 	}
 	defer campaigns.Close()
 
-	for campaigns.Next(){
+	for campaigns.Next() {
 		var campaign CampaignEntry
 		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl)
 		if err != nil {
@@ -129,7 +130,12 @@ func (pg *PostgresShopStore) UpdateShop(shop *Shop) error {
 		return err
 	}
 
-	defer tx.Rollback()
+	defer func(tx *sql.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+
+		}
+	}(tx)
 
 	query := `
 	UPDATE shops
