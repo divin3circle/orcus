@@ -51,7 +51,7 @@ func (th *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request
 	}
 	if !ok {
 		th.Logger.Printf("ERROR: error matching password at Matches: %v", err)
-		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid password"})
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid username or password"})
 		return
 	}
 
