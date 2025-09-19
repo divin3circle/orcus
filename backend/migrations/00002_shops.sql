@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS shops (
     id BIGSERIAL PRIMARY KEY,
-    -- merchant id
+    -- merchant_id
     name VARCHAR(50) UNIQUE NOT NULL,
     payment_id VARCHAR(100),
     profile_image_url VARCHAR(2048),

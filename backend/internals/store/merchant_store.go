@@ -1,6 +1,7 @@
 package store
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
@@ -55,6 +56,12 @@ type Merchant struct {
 	DeletedAt             time.Time `json:"deleted_at"`
 }
 
+var AnonymousMerchant = &Merchant{}
+
+func (m Merchant) IsAnonymous() bool {
+	return m.ID == AnonymousMerchant.ID
+}
+
 type PostgresMerchantStore struct {
 	db *sql.DB
 }
@@ -67,6 +74,7 @@ type MerchantStore interface {
 	CreateMerchant(merchant *Merchant) (*Merchant, error)
 	GetMerchantByUsername(username string) (*Merchant, error)
 	UpdateMerchant(merchant *Merchant) error
+	GetMerchantToken(scope, tokenPlainText string) (*Merchant, error)
 }
 
 func (pg *PostgresMerchantStore) CreateMerchant(merchant *Merchant) (*Merchant, error) {
@@ -141,4 +149,29 @@ func (pg *PostgresMerchantStore) UpdateMerchant(merchant *Merchant) error {
 	}
 
 	return nil
+}
+
+func (pg *PostgresMerchantStore) GetMerchantToken(scope, tokenPlainText string) (*Merchant, error) {
+	tokenHash := sha256.Sum256([]byte(tokenPlainText))
+
+	query := `
+	SELECT merchants.id, merchants.username, merchants.mobile_number, merchants.password_hash, merchants.account_id, merchants.profile_image_url, merchants.account_banner_image_url, merchants.created_at, merchants.updated_at
+	FROM merchants
+	INNER JOIN tokens ON merchants.id = tokens.merchant_id
+	WHERE tokens.hash = $1 AND tokens.scope = $2 AND tokens.expiry > $3
+	`
+
+	merchant := &Merchant{
+		PasswordHash: password{},
+	}
+
+	err := pg.db.QueryRow(query, tokenHash[:], scope, time.Now()).Scan(&merchant.ID, &merchant.Username, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.CreatedAt, &merchant.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return merchant, nil
+
 }

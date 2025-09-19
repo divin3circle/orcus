@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/divin3circle/orcus/backend/internals/api"
+	"github.com/divin3circle/orcus/backend/internals/middleware"
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/migrations"
 	"github.com/joho/godotenv"
@@ -26,6 +27,7 @@ type Application struct {
 	MerchantHandler *api.MerchantHandler
 	ShopHandler     *api.ShopHandler
 	TokenHandler    *api.TokenHandler
+	Middleware      *middleware.MerchantMiddleware
 	DB              *sql.DB
 }
 
@@ -69,6 +71,7 @@ func NewApplication() (*Application, error) {
 	mh := api.NewMerchantHandler(merchantStore, logger)
 	sh := api.NewShopHandler(shopStore, logger)
 	th := api.NewTokenHandler(tokenStore, merchantStore, logger)
+	mwh := middleware.NewMerchantMiddleware(merchantStore)
 
 	app := &Application{
 		Logger:          logger,
@@ -76,6 +79,7 @@ func NewApplication() (*Application, error) {
 		MerchantHandler: mh,
 		ShopHandler:     sh,
 		TokenHandler:    th,
+		Middleware:      mwh,
 		DB:              pgDB,
 	}
 	return app, nil

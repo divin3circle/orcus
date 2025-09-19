@@ -9,6 +9,7 @@ import (
 
 type Shop struct {
 	ID              int64           `json:"id"`
+	MerchantID      int64           `json:"merchant_id"`
 	Name            string          `json:"name"`
 	PaymentID       string          `json:"payment_id"`
 	ProfileImageUrl string          `json:"profile_image_url"`
@@ -39,6 +40,7 @@ type ShopStore interface {
 	CreateShop(shop *Shop) (*Shop, error)
 	GetShopByID(id int64) (*Shop, error)
 	UpdateShop(*Shop) error
+	GetShopOwner(id int64) (int64, error)
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -53,12 +55,12 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 	paymentId := uuid.NewString()
 
 	query :=
-		`INSERT INTO shops (name, payment_id, profile_image_url)
-		VALUES ($1, $2, $3)
+		`INSERT INTO shops (merchant_id, name, payment_id, profile_image_url)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
 
-	err = tx.QueryRow(query, shop.Name, paymentId, shop.ProfileImageUrl).Scan(&shop.ID)
+	err = tx.QueryRow(query, shop.MerchantID, shop.Name, paymentId, shop.ProfileImageUrl).Scan(&shop.ID)
 
 	if err != nil {
 		return nil, err
@@ -183,4 +185,19 @@ func (pg *PostgresShopStore) UpdateShop(shop *Shop) error {
 	}
 
 	return nil
+}
+
+func (pg *PostgresShopStore) GetShopOwner(id int64) (int64, error) {
+	var merchantID int64
+	query := `
+	SELECT merchant_id
+	FROM shops
+	WHERE id = $1
+	`
+
+	err := pg.db.QueryRow(query, id).Scan(&merchantID)
+	if err != nil {
+		return 0, err
+	}
+	return merchantID, nil
 }
