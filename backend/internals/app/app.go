@@ -25,6 +25,7 @@ type Application struct {
 	Port            int
 	MerchantHandler *api.MerchantHandler
 	ShopHandler     *api.ShopHandler
+	TokenHandler    *api.TokenHandler
 	DB              *sql.DB
 }
 
@@ -62,16 +63,19 @@ func NewApplication() (*Application, error) {
 	// stores
 	shopStore := store.NewPostgresShopStore(pgDB)
 	merchantStore := store.NewPostgresMerchantStore(pgDB)
+	tokenStore := store.NewPostgresTokenStore(pgDB)
 
 	// handlers
 	mh := api.NewMerchantHandler(merchantStore, logger)
 	sh := api.NewShopHandler(shopStore, logger)
+	th := api.NewTokenHandler(tokenStore, merchantStore, logger)
 
 	app := &Application{
 		Logger:          logger,
 		Port:            port,
 		MerchantHandler: mh,
 		ShopHandler:     sh,
+		TokenHandler:    th,
 		DB:              pgDB,
 	}
 	return app, nil

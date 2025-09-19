@@ -14,6 +14,7 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 
 	r.Post("/shops", orcus.ShopHandler.HandlerCreateShop)
 	r.Post("/register", orcus.MerchantHandler.HandleCreateMerchant)
+	r.Post("/login", orcus.TokenHandler.HandleCreateToken)
 
 	r.Put("/shops/{id}", orcus.ShopHandler.HandlerUpdateShop)
 	return r
