@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "motion/react";
 const MerchantHero = () => {
   return (
     <motion.div
-      className="relative z-10 w-full h-full px-4 flex flex-col-reverse md:flex-row items-center justify-between"
+      className="relative z-10 w-full h-full px-4 flex flex-col-reverse md:flex-row items-center gap-8 md:gap-0 md:justify-between"
       initial={{ opacity: 0, x: -30 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 50 }}

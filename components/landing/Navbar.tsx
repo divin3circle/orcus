@@ -113,11 +113,6 @@ function Navbar() {
                 </div>
               </DrawerDescription>
             </DrawerHeader>
-            <DrawerFooter>
-              <DrawerClose className="">
-                <Button variant="outline">Cancel</Button>
-              </DrawerClose>
-            </DrawerFooter>
           </DrawerContent>
         </Drawer>
       </div>
