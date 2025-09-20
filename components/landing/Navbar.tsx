@@ -57,7 +57,7 @@ function Navbar() {
           </Link>
           <Link
             href="/login"
-            className="bg-[#D7FC6E] p-2 rounded-xl font-bold uppercase transition-all duration-300"
+            className="bg-[#D7FC6E] p-1.5 text-sm rounded-xl font-bold uppercase transition-all duration-300"
           >
             Get Started
           </Link>
@@ -106,7 +106,7 @@ function Navbar() {
                   </Link>
                   <Link
                     href="/login"
-                    className="text-[#D7FC6E] bg-foreground font-bold uppercase transition-all duration-300"
+                    className="text-[#D7FC6E] bg-foreground p-1.5 text-sm rounded-xl font-bold uppercase transition-all duration-300"
                   >
                     Get Started
                   </Link>

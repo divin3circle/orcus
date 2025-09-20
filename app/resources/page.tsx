@@ -13,7 +13,7 @@ function page() {
           <p className="underline underline-offset-4">Back Home</p>
         </Link>
         <div className="mt-12">
-          <p className="text-sm text-foreground/70 text-center">
+          <p className="text-sm text-foreground/70 text-center p-2">
             Soon you will find all the resources you need to get started with
             our Platform.
           </p>
