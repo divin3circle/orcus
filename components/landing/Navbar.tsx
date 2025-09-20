@@ -20,7 +20,7 @@ import { useCustomerStore } from '@/lib/store'
 function Navbar() {
     const { customer, toggleCustomer } = useCustomerStore()
   return (
-    <nav className="w-full h-16 bg-foreground mt-2 rounded-3xl flex items-center justify-between">
+    <nav className="w-full h-16 bg-foreground mt-2 md:mt-4 rounded-3xl flex items-center justify-between">
       <div className='flex items-center gap-1 px-2'>
         <Image src={logo} alt="logo" width={42} height={42} />
         <p className="text-2xl text-background font-semibold">Orcus</p>
