@@ -50,14 +50,14 @@ function Navbar() {
             Customers
           </Link>
           <Link
-            href="/"
+            href="/resources"
             className="text-background uppercase font-semibold text-sm hover:text-background/70 transition-all duration-300"
           >
             Resources
           </Link>
           <Link
             href="/login"
-            className="text-[#D7FC6E] font-bold uppercase transition-all duration-300"
+            className="bg-[#D7FC6E] p-2 rounded-xl font-bold uppercase transition-all duration-300"
           >
             Get Started
           </Link>
@@ -99,7 +99,7 @@ function Navbar() {
                     Customers
                   </Link>
                   <Link
-                    href="/"
+                    href="/resources"
                     className="uppercase font-semibold text-sm hover:text-background/70 transition-all duration-300"
                   >
                     Resources
