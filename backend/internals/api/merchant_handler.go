@@ -36,7 +36,7 @@ func NewMerchantHandler(merchantStore store.MerchantStore, logger *log.Logger) *
 func (mh *MerchantHandler) HandleGetMerchantByUsername(w http.ResponseWriter, r *http.Request) {
 	merchantUsername := chi.URLParam(r, "username")
 	if merchantUsername == "" {
-		mh.Logger.Printf("ERROR: error reading mechant username in chi.URLParam, %v", merchantUsername)
+		mh.Logger.Printf("ERROR: error reading merchant username in chi.URLParam, %v", merchantUsername)
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": merchantUsername})
 		return
 	}

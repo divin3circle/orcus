@@ -18,21 +18,21 @@ func NewPostgresTokenStore(db *sql.DB) *PostgresTokenStore {
 
 type TokenStore interface {
 	Insert(token *tokens.Token) error
-	Create(merchantID int64, ttl time.Duration, scope string) (*tokens.Token, error)
-	DeleteAllForUser(scope string, merchantID int64) error
+	Create(userID, merchantID string, ttl time.Duration, scope string) (*tokens.Token, error)
+	DeleteAllForUser(scope string, userID string) error
 }
 
 func (pt *PostgresTokenStore) Insert(token *tokens.Token) error {
 	query := `
-	INSERT INTO tokens(hash, merchant_id, expiry, scope)
-	VALUES ($1, $2, $3, $4)
+	INSERT INTO tokens(hash, user_id, merchant_id, expiry, scope)
+	VALUES ($1, $2, $3, $4, $5)
 	`
-	_, err := pt.db.Exec(query, token.Hash, token.MerchantID, token.Expiry, token.Scope)
+	_, err := pt.db.Exec(query, token.Hash, token.UserID, token.MerchantID, token.Expiry, token.Scope)
 	return err
 }
 
-func (pt *PostgresTokenStore) Create(merchantID int64, ttl time.Duration, scope string) (*tokens.Token, error) {
-	token, err := tokens.GenerateToken(merchantID, ttl, scope)
+func (pt *PostgresTokenStore) Create(userID, merchantID string, ttl time.Duration, scope string) (*tokens.Token, error) {
+	token, err := tokens.GenerateToken(userID, merchantID, ttl, scope)
 	if err != nil {
 		return  nil, err
 	}
@@ -42,11 +42,11 @@ func (pt *PostgresTokenStore) Create(merchantID int64, ttl time.Duration, scope 
 	return  token, err
 }
 
-func (pt *PostgresTokenStore) DeleteAllForUser(scope string, merchantID int64) error {
+func (pt *PostgresTokenStore) DeleteAllForUser(scope string, userID string) error {
 	query := `
 	DELETE FROM tokens
-	WHERE merchant_id = $1 AND scope = $2
+	WHERE user_id = $1 AND scope = $2
 	`
-	_, err := pt.db.Exec(query, merchantID, scope)
+	_, err := pt.db.Exec(query, userID, scope)
 	return err
 }

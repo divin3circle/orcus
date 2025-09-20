@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -27,14 +26,10 @@ func WriteJSON(w http.ResponseWriter, status int, data Envelope) error{
 	return nil
 }
 
-func ReadIDParam(r *http.Request, name string) (int64, error) {
+func ReadIDParam(r *http.Request, name string) (string, error) {
 	idParam := chi.URLParam(r, name)
 	if idParam == "" {
-		return 0, errors.New("id is required")
+		return "", errors.New("id is required")
 	}
-	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
-		return 0, errors.New("failed to parse id: " + err.Error())
-	}
-	return id, nil
+	return idParam, nil
 }

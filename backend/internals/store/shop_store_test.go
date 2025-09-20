@@ -2,8 +2,9 @@ package store
 
 import (
 	"database/sql"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
@@ -46,13 +47,14 @@ func TestCreateShop(t *testing.T) {
 		{
 			name: "valid workout",
 			shop: &Shop{
-				ID:              1,
+				ID:              "test-shop-id-1",
+				MerchantID:      "test-merchant-id-1",
 				Name:            "Test Shop",
 				PaymentID:       "testId0001",
 				ProfileImageUrl: "testing.com",
 				Campaigns: []CampaignEntry{
 					{
-						ID:             1,
+						ID:             "test-campaign-id-1",
 						Name:           "Test Campaign",
 						TokenID:        "testId0001",
 						Description:    "Test Description",
@@ -69,13 +71,14 @@ func TestCreateShop(t *testing.T) {
 		{
 			name: "invalid workout",
 			shop: &Shop{
-				ID:              1,
+				ID:              "test-shop-id-2",
+				MerchantID:      "test-merchant-id-2",
 				Name:            "Test Shop 2",
 				PaymentID:       "testId0002",
 				ProfileImageUrl: "testing.com",
 				Campaigns: []CampaignEntry{
 					{
-						ID:             1,
+						ID:             "test-campaign-id-2",
 						Name:           "Test Campaign 1",
 						TokenID:        "testId0002",
 						Description:    "Test Description",

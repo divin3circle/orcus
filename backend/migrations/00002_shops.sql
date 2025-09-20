@@ -1,8 +1,12 @@
 -- +goose Up
 -- +goose StatementBegin
+
+-- Enable UUID extension for gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS shops (
-    id BIGSERIAL PRIMARY KEY,
-    -- merchant_id
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
     name VARCHAR(50) UNIQUE NOT NULL,
     payment_id VARCHAR(100),
     profile_image_url VARCHAR(2048),

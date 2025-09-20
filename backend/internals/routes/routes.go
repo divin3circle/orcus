@@ -1,12 +1,43 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/divin3circle/orcus/backend/internals/app"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func SetUpRoutes(orcus *app.Application) *chi.Mux {
 	r := chi.NewRouter()
+
+	// CORS middleware - allows cross-origin requests
+	r.Use(middleware.AllowContentType("application/json"))
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set CORS headers
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+			w.Header().Set("Access-Control-Expose-Headers", "Link")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Max-Age", "300")
+
+			// Handle preflight requests
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	// Request logging middleware
+	r.Use(middleware.Logger)
+
+	// Recovery middleware
+	r.Use(middleware.Recoverer)
 
 	r.Group(func (r chi.Router) {
 		r.Use(orcus.Middleware.Authenticate)
@@ -16,12 +47,21 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Get("/merchants/{username}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetMerchantByUsername))
 
 		r.Put("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerUpdateShop))
+
+	})
+
+	r.Group(func (r chi.Router) {
+		r.Use(orcus.Middleware.AuthenticateUser)
+		r.Get("/users/{username}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserByUsername))
 	})
 
 	r.Get("/health", orcus.HealthCheck)
 
 	r.Post("/register", orcus.MerchantHandler.HandleCreateMerchant)
 	r.Post("/login", orcus.TokenHandler.HandleCreateToken)
+
+	r.Post("/register-user", orcus.UserHandler.HandleCreateUser)
+	r.Post("/login-user", orcus.TokenHandler.HandleCreateUserToken)
 
 	return r
 }
