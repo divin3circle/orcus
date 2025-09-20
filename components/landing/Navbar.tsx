@@ -55,12 +55,12 @@ function Navbar() {
           >
             Resources
           </Link>
-          <Button
-            variant="ghost"
+          <Link
+            href="/login"
             className="text-[#D7FC6E] font-bold uppercase transition-all duration-300"
           >
             Get Started
-          </Button>
+          </Link>
         </div>
         <Drawer>
           <DrawerTrigger className="md:hidden">
@@ -104,12 +104,12 @@ function Navbar() {
                   >
                     Resources
                   </Link>
-                  <Button
-                    variant="ghost"
+                  <Link
+                    href="/login"
                     className="text-[#D7FC6E] bg-foreground font-bold uppercase transition-all duration-300"
                   >
                     Get Started
-                  </Button>
+                  </Link>
                 </div>
               </DrawerDescription>
             </DrawerHeader>
