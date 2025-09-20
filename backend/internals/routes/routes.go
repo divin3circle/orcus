@@ -8,13 +8,20 @@ import (
 func SetUpRoutes(orcus *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
+	r.Group(func (r chi.Router) {
+		r.Use(orcus.Middleware.Authenticate)
+		r.Post("/shops", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerCreateShop))
+
+		r.Get("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopByID))
+		r.Get("/merchants/{username}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetMerchantByUsername))
+
+		r.Put("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerUpdateShop))
+	})
+
 	r.Get("/health", orcus.HealthCheck)
-	r.Get("/merchants/{username}", orcus.MerchantHandler.HandleGetMerchantByUsername)
-	r.Get("/shops/{id}", orcus.ShopHandler.HandlerGetShopByID)
 
-	r.Post("/shops", orcus.ShopHandler.HandlerCreateShop)
 	r.Post("/register", orcus.MerchantHandler.HandleCreateMerchant)
+	r.Post("/login", orcus.TokenHandler.HandleCreateToken)
 
-	r.Put("/shops/{id}", orcus.ShopHandler.HandlerUpdateShop)
 	return r
 }

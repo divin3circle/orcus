@@ -1,10 +1,13 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
+	"github.com/divin3circle/orcus/backend/internals/middleware"
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
 )
@@ -47,6 +50,16 @@ func (sh *ShopHandler) HandlerCreateShop(w http.ResponseWriter, r *http.Request)
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
+
+	cm := middleware.GetMerchant(r)
+	if cm == nil || cm.IsAnonymous() {
+		sh.Logger.Printf("ERROR: error getting current merchant in GetMerchant, current merchant is nil or anonymous")
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "unauthorized"})
+		return
+	}
+
+	shop.MerchantID = cm.ID
+
 
 	createdShop, err := sh.ShopStore.CreateShop(&shop)
 	if err != nil {
@@ -103,6 +116,32 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 	if updateShopRequest.Campaigns != nil {
 		existingShop.Campaigns = updateShopRequest.Campaigns
 	}
+
+	cm := middleware.GetMerchant(r)
+	if cm == nil || cm.IsAnonymous() {
+		sh.Logger.Printf("ERROR: error getting current merchant in GetMerchant, current merchant is nil or anonymous")
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "unauthorized"})
+		return
+	}
+	
+	shopOwner, err := sh.ShopStore.GetShopOwner(shopID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			sh.Logger.Printf("ERROR: error getting shop owner GetShopOwner, shop owner not found")
+			utils.WriteJSON(w, http.StatusNotFound, utils.Envelope{"error": "shop not found"})
+			return
+		}
+		sh.Logger.Printf("ERROR: error getting shop owner GetShopOwner: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	if shopOwner != cm.ID {
+		sh.Logger.Printf("ERROR: error updating shop UpdateShop, shop owner is not the current merchant")
+		utils.WriteJSON(w, http.StatusForbidden, utils.Envelope{"error": "forbidden"})
+		return
+	}
+	
 
 	err = sh.ShopStore.UpdateShop(existingShop)
 	if err != nil {
