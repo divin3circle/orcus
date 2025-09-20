@@ -7,8 +7,11 @@ import { Button } from "../ui/button";
 import { useCustomerStore } from "@/lib/store";
 import { IconBrandApple, IconBrandGooglePlay } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useRouter } from "next/navigation";
 
 const MerchantHero = () => {
+  const navigate = useRouter();
+
   return (
     <motion.div
       className="relative z-10 w-full h-full px-4 flex flex-col-reverse md:flex-row items-center gap-8 md:gap-0 md:justify-between"
@@ -30,7 +33,11 @@ const MerchantHero = () => {
           With Orcus you business can accept crypto payments from customers all
           over the world at insanely low fees and at unimaginable speeds.
         </p>
-        <Button variant="default" className="w-full md:w-1/2 mt-4 mb-4">
+        <Button
+          variant="default"
+          className="w-full md:w-1/2 mt-4 mb-4"
+          onClick={() => navigate.push("/register")}
+        >
           Create A Merchant Account
         </Button>
       </div>
