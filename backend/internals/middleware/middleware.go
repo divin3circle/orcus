@@ -13,15 +13,17 @@ import (
 
 type MerchantMiddleware struct {
 	MerchantStore store.MerchantStore
+	UserStore store.UserStore
 }
 
-func NewMerchantMiddleware(merchantStore store.MerchantStore) *MerchantMiddleware {
-	return &MerchantMiddleware{MerchantStore: merchantStore}
+func NewMerchantMiddleware(merchantStore store.MerchantStore, userStore store.UserStore) *MerchantMiddleware {
+	return &MerchantMiddleware{MerchantStore: merchantStore, UserStore: userStore}
 }
 
 type contextKey string
 
 const MerchantContextKey = contextKey("merchant")
+const UserContextKey = contextKey("user")
 
 func SetMerchant(r *http.Request, merchant *store.Merchant) *http.Request {
 	// ctx := context.WithValue(r.Context(), MerchantContextKey, merchant)
@@ -36,6 +38,18 @@ func GetMerchant(r *http.Request) *store.Merchant {
 		panic("merchant not found in context")
 	}
 	return merchant
+}
+
+func GetUser(r *http.Request) *store.User {
+	user, ok := r.Context().Value(UserContextKey).(*store.User)
+	if !ok {
+		panic("user not found in context")
+	}
+	return user
+}
+
+func SetUser(r *http.Request, user *store.User) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
 }
 
 func (mm *MerchantMiddleware) Authenticate(next http.Handler) http.Handler {
@@ -69,11 +83,53 @@ func (mm *MerchantMiddleware) Authenticate(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+func (mm *MerchantMiddleware) AuthenticateUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Vary", "Authorization")
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			r = SetUser(r, store.AnonymousUser)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		headerParts := strings.Split(authHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+			utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid authorization header"})
+			return
+		}
+
+		tokenPlainText := headerParts[1]
+		user, err := mm.UserStore.GetUserToken(tokens.ScopeAuthentication, tokenPlainText)
+		if err != nil {
+			utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid token"})
+			return
+		}
+		if user == nil {
+			utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "token expired or not found"})
+			return
+		}
+
+		r = SetUser(r, user)
+		next.ServeHTTP(w, r)
+	})
+}
 
 func (mm *MerchantMiddleware) RequireAuthenticatedMerchant(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
 		merchant := GetMerchant(r)
 		if merchant.IsAnonymous() {
+			utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "unauthorized"})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (mm *MerchantMiddleware) RequireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+		user := GetUser(r)
+		if user.IsAnonymous() {
 			utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "unauthorized"})
 			return
 		}

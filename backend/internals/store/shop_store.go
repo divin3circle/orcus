@@ -8,8 +8,8 @@ import (
 )
 
 type Shop struct {
-	ID              int64           `json:"id"`
-	MerchantID      int64           `json:"merchant_id"`
+	ID              string          `json:"id"`
+	MerchantID      string          `json:"merchant_id"`
 	Name            string          `json:"name"`
 	PaymentID       string          `json:"payment_id"`
 	ProfileImageUrl string          `json:"profile_image_url"`
@@ -17,7 +17,7 @@ type Shop struct {
 }
 
 type CampaignEntry struct {
-	ID             int64  `json:"id"`
+	ID             string `json:"id"`
 	Name           string `json:"name"`
 	TokenID        string `json:"token_id"`
 	Description    string `json:"description"`
@@ -38,9 +38,9 @@ func NewPostgresShopStore(db *sql.DB) *PostgresShopStore {
 
 type ShopStore interface {
 	CreateShop(shop *Shop) (*Shop, error)
-	GetShopByID(id int64) (*Shop, error)
+	GetShopByID(id string) (*Shop, error)
 	UpdateShop(*Shop) error
-	GetShopOwner(id int64) (int64, error)
+	GetShopOwner(id string) (string, error)
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -87,7 +87,7 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 	return shop, nil
 }
 
-func (pg *PostgresShopStore) GetShopByID(id int64) (*Shop, error) {
+func (pg *PostgresShopStore) GetShopByID(id string) (*Shop, error) {
 	shop := &Shop{}
 	query := `
 	SELECT id, name, payment_id, profile_image_url
@@ -187,8 +187,8 @@ func (pg *PostgresShopStore) UpdateShop(shop *Shop) error {
 	return nil
 }
 
-func (pg *PostgresShopStore) GetShopOwner(id int64) (int64, error) {
-	var merchantID int64
+func (pg *PostgresShopStore) GetShopOwner(id string) (string, error) {
+	var merchantID string
 	query := `
 	SELECT merchant_id
 	FROM shops
@@ -197,7 +197,7 @@ func (pg *PostgresShopStore) GetShopOwner(id int64) (int64, error) {
 
 	err := pg.db.QueryRow(query, id).Scan(&merchantID)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	return merchantID, nil
 }

@@ -43,7 +43,7 @@ func (p *password) String() string {
 }
 
 type Merchant struct {
-	ID                    int64     `json:"id"`
+	ID                    string    `json:"id"`
 	Username              string    `json:"username"`
 	MobileNumber          string    `json:"mobile_number"`
 	PasswordHash          password  `json:"-"`

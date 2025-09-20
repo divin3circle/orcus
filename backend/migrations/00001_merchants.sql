@@ -1,7 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
+
+-- Enable UUID extension for gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS merchants (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(50) UNIQUE NOT NULL,
     mobile_number VARCHAR(13),
     password_hash VARCHAR(255) NOT NULL,

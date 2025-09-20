@@ -24,6 +24,7 @@ import (
 type Application struct {
 	Logger          *log.Logger
 	Port            int
+	UserHandler     *api.UserHandler
 	MerchantHandler *api.MerchantHandler
 	ShopHandler     *api.ShopHandler
 	TokenHandler    *api.TokenHandler
@@ -66,16 +67,20 @@ func NewApplication() (*Application, error) {
 	shopStore := store.NewPostgresShopStore(pgDB)
 	merchantStore := store.NewPostgresMerchantStore(pgDB)
 	tokenStore := store.NewPostgresTokenStore(pgDB)
+	userTokenStore := store.NewPostgresUserTokenStore(pgDB)
+	userStore := store.NewPostgresUserStore(pgDB)
 
 	// handlers
 	mh := api.NewMerchantHandler(merchantStore, logger)
 	sh := api.NewShopHandler(shopStore, logger)
-	th := api.NewTokenHandler(tokenStore, merchantStore, logger)
-	mwh := middleware.NewMerchantMiddleware(merchantStore)
+	th := api.NewTokenHandler(tokenStore, merchantStore, userStore, userTokenStore, logger)
+	mwh := middleware.NewMerchantMiddleware(merchantStore, userStore)
+	uh := api.NewUserHandler(userStore, logger)
 
 	app := &Application{
 		Logger:          logger,
 		Port:            port,
+		UserHandler:     uh,
 		MerchantHandler: mh,
 		ShopHandler:     sh,
 		TokenHandler:    th,
