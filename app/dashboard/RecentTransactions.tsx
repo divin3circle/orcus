@@ -1,23 +1,24 @@
 import Link from "next/link";
 import React from "react";
+import RecentTransaction from "./RecentTransaction";
+import { mockTransactions } from "@/mocks";
 
 function RecentTransactions() {
   return (
     <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-[45%]">
       <div className="flex justify-between items-center mt-1 mb-2">
-        <h1 className="text-base">Recent Transactions</h1>
+        <h1 className="text-base font-semibold">Recent Transactions</h1>
         <Link
           href="/transactions"
-          className="text-sm font-semibold hover:text-foreground/80 transition-all duration-300"
+          className="text-sm hover:text-foreground/80 transition-all duration-300"
         >
           View All
         </Link>
       </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">Transaction</h2>
-          <p className="text-sm">Transaction</p>
-        </div>
+      <div className="flex flex-col gap-2 mt-4">
+        {mockTransactions.slice(0, 5).map((txn) => (
+          <RecentTransaction key={txn.id} txn={txn} />
+        ))}
       </div>
     </div>
   );
