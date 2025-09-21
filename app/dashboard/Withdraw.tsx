@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 
 function Withdraw() {
   return (
-    <div className="border border-foreground/30 rounded-xl p-2 h-auto xl:h-[42%]">
+    <div className="border border-foreground/30 rounded-xl p-2 h-auto xl:h-[45%]">
       <h1 className="text-base font-semibold mt-2">Withdraw</h1>
       <div className="flex items-center justify-between mt-2">
         <p className="text-sm text-foreground/80">Withdrawal Limit</p>
@@ -28,7 +28,7 @@ function Withdraw() {
           </div>
         ))}
       </div>
-      <Tabs defaultValue="account" className="w-full mt-4">
+      <Tabs defaultValue="wallet" className="w-full mt-4">
         <TabsList className="w-full">
           <TabsTrigger
             value="wallet"

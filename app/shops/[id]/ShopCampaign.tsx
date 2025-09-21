@@ -1,11 +1,11 @@
+import CampaignCard from "@/app/dashboard/CampaignCard";
 import { mockCampaigns } from "@/mocks";
 import React from "react";
-import CampaignCard from "./CampaignCard";
 
-function Campaigns() {
+function ShopCampaign() {
   return (
-    <div className="border border-foreground/30 rounded-xl p-2 h-auto xl:h-[55%]">
-      <h1 className="text-base font-semibold">Campaigns</h1>
+    <div className=" p-2 w-full md:w-[45%] h-full">
+      <h1 className="text-base font-semibold">Latest Campaigns</h1>
       <div className="flex flex-col gap-2 mt-4">
         {mockCampaigns.slice(0, 2).map((campaign) => (
           <CampaignCard key={campaign.id} campaign={campaign} />
@@ -15,4 +15,4 @@ function Campaigns() {
   );
 }
 
-export default Campaigns;
+export default ShopCampaign;
