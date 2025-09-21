@@ -15,7 +15,7 @@ function Shops() {
           View All
         </Link>
       </div>
-      <div className="flex flex-col gap-2 mt-6">
+      <div className="flex flex-col gap-4 mt-6">
         {mockShops.slice(0, 2).map((shop) => (
           <ShopCard key={shop.id} shop={shop} />
         ))}

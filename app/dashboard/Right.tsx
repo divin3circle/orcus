@@ -4,7 +4,7 @@ import Withdraw from "./Withdraw";
 
 function Right() {
   return (
-    <div className="flex flex-col gap-2 w-full xl:w-1/4">
+    <div className="flex flex-col-reverse gap-2 w-full xl:w-1/4">
       <Campaigns />
       <Withdraw />
     </div>
