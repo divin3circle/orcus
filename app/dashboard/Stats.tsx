@@ -19,7 +19,7 @@ function Stats() {
             </div>
           </div>
         </div>
-        <div className="pb-4 h-1/2 w-full">
+        <div className="h-1/2 w-full">
           <div className="px-2">
             <h1 className="text-base font-semibold mt-2">Withdrawals</h1>
             <p className="text-sm text-foreground/80">Last 30 days</p>
@@ -32,7 +32,7 @@ function Stats() {
                 alt="withdraw"
                 width={100}
                 height={100}
-                className="w-full h-full object-cover"
+                className="w-[80%] object-cover"
               />
             </div>
           </div>
