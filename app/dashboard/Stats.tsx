@@ -40,7 +40,7 @@ function Stats() {
       </div>
       <div className="md:w-1/2 px-2 border-b md:border-b-0 border-foreground/30 w-full h-full flex flex-col justify-between">
         <div className="">
-          <h1 className="text-base font-semibold mt-2">Shop Performance</h1>
+          <h1 className="text-base font-semibold mt-2">Shop Performances</h1>
           <p className="text-sm text-foreground/80">Last 30 days</p>
         </div>
         <div className="w-full h-full flex items-center justify-center">

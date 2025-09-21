@@ -2,7 +2,19 @@ import { MyShop } from "@/hooks/useMyShops";
 import React from "react";
 import cardRedImage from "@/public/card-red.png";
 import cardBlueImage from "@/public/card-blue.png";
-import { IconShare } from "@tabler/icons-react";
+import { IconCopy, IconShare } from "@tabler/icons-react";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import qrMock from "@/public/qr-mock.png";
 
 function ShopCard({ shop }: { shop: MyShop }) {
   const { theme } = shop;
@@ -25,7 +37,50 @@ function ShopCard({ shop }: { shop: MyShop }) {
             {shop.name}
           </h1>
         </div>
-        <IconShare className="text-background cursor-pointer" />
+        <Drawer>
+          <DrawerTrigger>
+            <IconShare className="text-background cursor-pointer" />
+          </DrawerTrigger>
+          <DrawerContent className="bg-[#d9d9d9]">
+            <DrawerHeader>
+              <DrawerTitle>
+                <h1 className="text-lg font-semibold">Share Shop</h1>
+                <p className="text-sm text-foreground/80">
+                  Share shop with your customers.
+                </p>
+              </DrawerTitle>
+              <DrawerDescription className="flex items-center justify-center">
+                <img
+                  src={qrMock.src}
+                  alt="qr"
+                  width={200}
+                  height={200}
+                  className="rounded-xl my-4"
+                />
+              </DrawerDescription>
+            </DrawerHeader>
+            <DrawerFooter className="md:w-[500px] w-full mx-auto my-0">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-sm text-foreground/80">Name</h1>
+                  <h1 className="text-sm text-foreground/80 font-semibold">
+                    {shop.name}
+                  </h1>
+                </div>
+                <div className="flex items-center justify-between">
+                  <h1 className="text-sm text-foreground/80">Pay ID</h1>
+                  <h1 className="text-sm text-foreground/80 font-semibold">
+                    {shop.payment_id.slice(0, 4)}...{shop.payment_id.slice(-4)}
+                  </h1>
+                </div>
+              </div>
+              <Button className="w-full bg-foreground text-background hover:bg-foreground/90 flex items-center gap-1">
+                Copy Link
+                <IconCopy className="size-4" />
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       </div>
       <div className=" flex items-center justify-between">
         <div className="flex flex-col">
