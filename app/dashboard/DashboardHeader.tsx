@@ -9,8 +9,8 @@ function DashboardHeader() {
   return (
     <div className="w-full flex items-center justify-between mt-4">
       <div className="flex items-center gap-1 px-2">
-        <div className="bg-foreground p-1 rounded-xl">
-          <Image src={logo} alt="logo" width={36} height={36} />
+        <div className="bg-foreground p-1 rounded-lg">
+          <Image src={logo} alt="logo" width={30} height={30} />
         </div>
         <p className="text-2xl font-semibold">Orcus</p>
       </div>
