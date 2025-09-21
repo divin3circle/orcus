@@ -7,7 +7,7 @@ const showBalance = true;
 
 function Balance() {
   return (
-    <div className="border border-foreground/30 rounded-xl h-auto md:h-1/2 p-4">
+    <div className="border border-foreground/30 rounded-xl h-auto md:h-[45%] p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl md:text-2xl font-semibold">Balance</h1>
         <Button
@@ -18,7 +18,7 @@ function Balance() {
           <p className="text-base hidden md:block">Add Shop</p>
         </Button>
       </div>
-      <div className="flex gap-4 mt-4 md:mt-8 items-center">
+      <div className="flex gap-4 mt-4 items-center">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl md:text-4xl text-foreground/80 font-bold">
             KES

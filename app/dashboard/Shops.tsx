@@ -3,7 +3,7 @@ import React from "react";
 
 function Shops() {
   return (
-    <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-1/2">
+    <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-[55%]">
       <div className="flex justify-between items-center mt-1 mb-2">
         <h1 className="text-base">My Shops</h1>
         <Link
