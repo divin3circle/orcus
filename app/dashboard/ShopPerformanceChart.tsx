@@ -3,14 +3,6 @@
 import * as React from "react";
 import { Label, Pie, PieChart, Sector } from "recharts";
 import { PieSectorDataItem } from "recharts/types/polar/Pie";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
@@ -29,41 +21,77 @@ import { mockShops } from "@/mocks";
 
 export const description = "An interactive pie chart";
 
-const shopData = [
-  { shop: "tech-gadgets", balance: 186, fill: "var(--color-tech-gadgets)" },
-  {
-    shop: "fashion-boutique",
-    balance: 305,
-    fill: "var(--color-fashion-boutique)",
-  },
-];
+// Generate shop data dynamically from mockShops
+const generateShopData = () => {
+  return mockShops.map((shop, index) => ({
+    shop: shop.id, // Use shop ID as unique identifier
+    balance: (index + 1) * 150, // More balanced values: 150, 300, 450, etc.
+    fill: `var(--chart-${(index % 5) + 1})`, // Use same color system as chartConfig
+    name: shop.name, // Store shop name for display
+  }));
+};
 
-const chartConfig = {
-  balance: {
-    label: "Balance",
-  },
-  shop: {
-    label: "Shop",
-  },
-  "tech-gadgets": {
-    label: "Tech Gadgets Store",
-    color: "var(--chart-1)",
-  },
-  "fashion-boutique": {
-    label: "Fashion Boutique",
-    color: "var(--chart-3)",
-  },
-} satisfies ChartConfig;
+// Generate chart config dynamically
+const generateChartConfig = (shops: typeof mockShops) => {
+  const baseConfig = {
+    balance: {
+      label: "Balance",
+    },
+    shop: {
+      label: "Shop",
+    },
+  };
+
+  // Add shop-specific configs
+  const shopConfigs = shops.reduce((acc, shop, index) => {
+    acc[shop.id] = {
+      label: shop.name,
+      color: `var(--chart-${(index % 5) + 1})`,
+    };
+    return acc;
+  }, {} as Record<string, { label: string; color: string }>);
+
+  return { ...baseConfig, ...shopConfigs } satisfies ChartConfig;
+};
 
 export default function ShopPerformanceChart() {
   const id = "pie-interactive";
-  const [activeShop, setActiveShop] = React.useState(shopData[0].shop);
+
+  // Generate data and config dynamically
+  const shopData = React.useMemo(() => generateShopData(), []);
+  const chartConfig = React.useMemo(() => generateChartConfig(mockShops), []);
+
+  // Handle empty shops case
+  const hasShops = shopData.length > 0;
+  const [activeShop, setActiveShop] = React.useState(
+    hasShops ? shopData[0].shop : ""
+  );
 
   const activeIndex = React.useMemo(
     () => shopData.findIndex((item) => item.shop === activeShop),
-    [activeShop]
+    [activeShop, shopData]
   );
-  const shops = React.useMemo(() => shopData.map((item) => item.shop), []);
+  const shops = React.useMemo(
+    () => shopData.map((item) => item.shop),
+    [shopData]
+  );
+
+  // Show "No Data" state when no shops exist
+  if (!hasShops) {
+    return (
+      <div className="flex flex-col h-full w-full items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-2">📊</div>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            No Shops Yet
+          </h3>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Create your first shop to see performance data
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -83,7 +111,7 @@ export default function ShopPerformanceChart() {
             {shops.map((key) => {
               const config = chartConfig[key as keyof typeof chartConfig];
 
-              if (!config) {
+              if (!config || !("color" in config)) {
                 return null;
               }
 
@@ -97,7 +125,7 @@ export default function ShopPerformanceChart() {
                     <span
                       className="flex h-3 w-3 shrink-0 rounded-xs"
                       style={{
-                        backgroundColor: `var(--color-${key})`,
+                        backgroundColor: config.color as string,
                       }}
                     />
                     {config?.label}
@@ -155,19 +183,18 @@ export default function ShopPerformanceChart() {
                           y={viewBox.cy}
                           className="fill-foreground text-lg font-bold"
                         >
-                          KES {shopData[activeIndex].balance.toLocaleString()}
+                          KES{" "}
+                          {shopData[activeIndex]?.balance.toLocaleString() || 0}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 16}
                           className="fill-muted-foreground text-xs"
                         >
-                          {
-                            chartConfig[
-                              shopData[activeIndex]
-                                .shop as keyof typeof chartConfig
-                            ]?.label
-                          }
+                          {chartConfig[
+                            shopData[activeIndex]
+                              ?.shop as keyof typeof chartConfig
+                          ]?.label || "No Shop"}
                         </tspan>
                       </text>
                     );
