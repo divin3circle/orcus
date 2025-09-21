@@ -14,9 +14,8 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import {
-  IconArrowUpBar,
+  IconCircleDashedCheck,
   IconCalendar,
-  IconCheck,
   IconCopy,
   IconDownload,
 } from "@tabler/icons-react";
@@ -102,7 +101,7 @@ function RecentTransaction({ txn }: { txn: Transaction }) {
                     <p className="text-sm text-foreground/80">Status</p>
                     <p className="text-sm font-semibold flex items-center gap-1">
                       {txn.status}
-                      <IconCheck className="size-4" />
+                      <IconCircleDashedCheck className="size-4 text-green-500" />
                     </p>
                   </div>
                 </div>
