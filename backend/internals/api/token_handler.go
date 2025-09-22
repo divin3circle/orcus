@@ -57,7 +57,7 @@ func (th *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	token, err := th.TokenStore.Create("", merchant.ID, 24*time.Hour, tokens.ScopeAuthentication)
+	token, err := th.TokenStore.Create(merchant.ID, 24*time.Hour, tokens.ScopeAuthentication)
 	if err != nil {
 		th.Logger.Printf("ERROR: error creating token at Create: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/divin3circle/orcus/backend/internals/middleware"
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
 	"github.com/go-chi/chi/v5"
@@ -19,6 +20,11 @@ type RegisterRequest struct {
 	ProfileImageUrl string `json:"profile_image_url"`
 	AccountBannerImageUrl string `json:"account_banner_image_url"`
 	AutoOfframp bool `json:"auto_offramp"`
+}
+
+type WithdrawRequest struct {
+	Amount int64 `json:"amount"`
+	Receiver string `json:"receiver"`
 }
 
 type MerchantHandler struct{
@@ -118,4 +124,37 @@ func (mh *MerchantHandler) validateRegisterRequest(registerRequest *RegisterRequ
 		return errors.New("username must be between 3 and 50 characters long")
 	}
 	return nil
+}
+
+func (mh *MerchantHandler) HandleWithdraw(w http.ResponseWriter, r *http.Request) {
+	var req WithdrawRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error while decoding withdraw request body at Decode, %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	merchant := middleware.GetMerchant(r)
+	withdrawal, err := mh.MerchantStore.Withdraw(merchant, req.Amount, req.Receiver)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error while withdrawing at Withdraw, %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"withdrawal": withdrawal})
+}
+
+func (mh *MerchantHandler) HandleGetWithdrawals(w http.ResponseWriter, r *http.Request) {
+	merchant := middleware.GetMerchant(r)
+	withdrawals, err := mh.MerchantStore.GetWithdrawals(merchant)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error while getting withdrawals at GetWithdrawals, %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"withdrawals": withdrawals})
 }

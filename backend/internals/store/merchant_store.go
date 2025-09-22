@@ -56,6 +56,18 @@ type Merchant struct {
 	DeletedAt             time.Time `json:"deleted_at"`
 }
 
+type Withdrawal struct {
+	ID string `json:"id"`
+	MerchantID string `json:"merchant_id"`
+	Amount int64 `json:"amount"`
+	Fee int64 `json:"fee"`
+	Receiver string `json:"receiver"`
+	Status string `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	DeletedAt time.Time `json:"deleted_at"`
+}
+
 var AnonymousMerchant = &Merchant{}
 
 func (m Merchant) IsAnonymous() bool {
@@ -75,6 +87,8 @@ type MerchantStore interface {
 	GetMerchantByUsername(username string) (*Merchant, error)
 	UpdateMerchant(merchant *Merchant) error
 	GetMerchantToken(scope, tokenPlainText string) (*Merchant, error)
+	Withdraw(merchant *Merchant, amount int64, receiver string) (*Withdrawal, error)
+	GetWithdrawals(merchant *Merchant) ([]*Withdrawal, error)
 }
 
 func (pg *PostgresMerchantStore) CreateMerchant(merchant *Merchant) (*Merchant, error) {
@@ -174,4 +188,44 @@ func (pg *PostgresMerchantStore) GetMerchantToken(scope, tokenPlainText string) 
 	}
 	return merchant, nil
 
+}
+
+func (pg *PostgresMerchantStore) Withdraw(merchant *Merchant, amount int64, receiver string) (*Withdrawal, error) {
+	var withdrawal = &Withdrawal{}
+	query := `
+	INSERT INTO withdrawals (merchant_id, amount, fee, receiver, status)
+	VALUES ($1, $2, $3, $4, $5)
+	RETURNING id, status, amount, fee, receiver, merchant_id, created_at, updated_at;
+	`
+
+	err := pg.db.QueryRow(query, merchant.ID, amount, 0, receiver, "completed").Scan(&withdrawal.ID, &withdrawal.Status, &withdrawal.Amount, &withdrawal.Fee, &withdrawal.Receiver, &withdrawal.MerchantID, &withdrawal.CreatedAt, &withdrawal.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return withdrawal, nil
+}
+
+func (pg *PostgresMerchantStore) GetWithdrawals(merchant *Merchant) ([]*Withdrawal, error) {
+	query := `
+	SELECT id, status, amount, fee, receiver, merchant_id, created_at, updated_at
+	FROM withdrawals
+	WHERE merchant_id = $1
+	`
+
+	rows, err := pg.db.Query(query, merchant.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var withdrawals []*Withdrawal
+	for rows.Next() {
+		var withdrawal = &Withdrawal{}
+		err := rows.Scan(&withdrawal.ID, &withdrawal.Status, &withdrawal.Amount, &withdrawal.Fee, &withdrawal.Receiver, &withdrawal.MerchantID, &withdrawal.CreatedAt, &withdrawal.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		withdrawals = append(withdrawals, withdrawal)
+	}
+	return withdrawals, nil
 }
