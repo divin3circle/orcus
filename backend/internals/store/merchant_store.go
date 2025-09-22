@@ -29,10 +29,10 @@ func (p *password) Matches(plainText string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plainText))
 	if err != nil {
 		switch {
-			case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-				return false, nil
-			default:
-				return false, err
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
 		}
 	}
 	return true, nil
@@ -56,6 +56,18 @@ type Merchant struct {
 	DeletedAt             time.Time `json:"deleted_at"`
 }
 
+type Withdrawal struct {
+	ID         string    `json:"id"`
+	MerchantID string    `json:"merchant_id"`
+	Amount     int64     `json:"amount"`
+	Fee        int64     `json:"fee"`
+	Receiver   string    `json:"receiver"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	DeletedAt  time.Time `json:"deleted_at"`
+}
+
 var AnonymousMerchant = &Merchant{}
 
 func (m Merchant) IsAnonymous() bool {
@@ -73,8 +85,11 @@ func NewPostgresMerchantStore(db *sql.DB) *PostgresMerchantStore {
 type MerchantStore interface {
 	CreateMerchant(merchant *Merchant) (*Merchant, error)
 	GetMerchantByUsername(username string) (*Merchant, error)
+	GetMerchantByID(id string) (*Merchant, error)
 	UpdateMerchant(merchant *Merchant) error
 	GetMerchantToken(scope, tokenPlainText string) (*Merchant, error)
+	Withdraw(merchant *Merchant, amount int64, receiver string) (*Withdrawal, error)
+	GetWithdrawals(merchant *Merchant) ([]*Withdrawal, error)
 }
 
 func (pg *PostgresMerchantStore) CreateMerchant(merchant *Merchant) (*Merchant, error) {
@@ -174,4 +189,64 @@ func (pg *PostgresMerchantStore) GetMerchantToken(scope, tokenPlainText string) 
 	}
 	return merchant, nil
 
+}
+
+func (pg *PostgresMerchantStore) Withdraw(merchant *Merchant, amount int64, receiver string) (*Withdrawal, error) {
+	var withdrawal = &Withdrawal{}
+	query := `
+	INSERT INTO withdrawals (merchant_id, amount, fee, receiver, status)
+	VALUES ($1, $2, $3, $4, $5)
+	RETURNING id, status, amount, fee, receiver, merchant_id, created_at, updated_at;
+	`
+
+	err := pg.db.QueryRow(query, merchant.ID, amount, 0, receiver, "completed").Scan(&withdrawal.ID, &withdrawal.Status, &withdrawal.Amount, &withdrawal.Fee, &withdrawal.Receiver, &withdrawal.MerchantID, &withdrawal.CreatedAt, &withdrawal.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return withdrawal, nil
+}
+
+func (pg *PostgresMerchantStore) GetWithdrawals(merchant *Merchant) ([]*Withdrawal, error) {
+	query := `
+	SELECT id, status, amount, fee, receiver, merchant_id, created_at, updated_at
+	FROM withdrawals
+	WHERE merchant_id = $1
+	`
+
+	rows, err := pg.db.Query(query, merchant.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var withdrawals []*Withdrawal
+	for rows.Next() {
+		var withdrawal = &Withdrawal{}
+		err := rows.Scan(&withdrawal.ID, &withdrawal.Status, &withdrawal.Amount, &withdrawal.Fee, &withdrawal.Receiver, &withdrawal.MerchantID, &withdrawal.CreatedAt, &withdrawal.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		withdrawals = append(withdrawals, withdrawal)
+	}
+	return withdrawals, nil
+}
+
+func (pg *PostgresMerchantStore) GetMerchantByID(id string) (*Merchant, error) {
+	merchant := &Merchant{
+		PasswordHash: password{},
+	}
+	query := `
+	SELECT id, username, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url, created_at, updated_at
+	FROM merchants 
+	WHERE id = $1
+	`
+
+	err := pg.db.QueryRow(query, id).Scan(&merchant.ID, &merchant.Username, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.CreatedAt, &merchant.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return merchant, nil
 }

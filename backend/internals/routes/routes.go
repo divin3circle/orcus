@@ -42,9 +42,14 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 	r.Group(func (r chi.Router) {
 		r.Use(orcus.Middleware.Authenticate)
 		r.Post("/shops", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerCreateShop))
+		r.Post("/withdraw", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleWithdraw))
 
 		r.Get("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopByID))
 		r.Get("/merchants/{username}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetMerchantByUsername))
+		r.Get("/withdrawals", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetWithdrawals))
+		r.Get("/transactions/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionByID))
+		r.Get("/transactions/shop/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionsByShopID))
+		r.Get("/transactions/merchant/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionsByMerchantID))
 
 		r.Put("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerUpdateShop))
 
@@ -52,7 +57,14 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 
 	r.Group(func (r chi.Router) {
 		r.Use(orcus.Middleware.AuthenticateUser)
+
 		r.Get("/users/{username}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserByUsername))
+		r.Get("/transactions/user/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleGetTransactionsByUserID))
+		r.Get("/transactions/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleGetTransactionByID))
+		r.Get("/purchases/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserPurchases))
+
+		r.Post("/transactions", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleCreateTransaction))
+		r.Post("/purchases", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleBuyToken))
 	})
 
 	r.Get("/health", orcus.HealthCheck)

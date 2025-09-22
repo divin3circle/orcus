@@ -6,9 +6,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/divin3circle/orcus/backend/internals/middleware"
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
 	"github.com/go-chi/chi/v5"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 type RegisterRequest struct {
@@ -21,15 +23,22 @@ type RegisterRequest struct {
 	AutoOfframp bool `json:"auto_offramp"`
 }
 
+type WithdrawRequest struct {
+	Amount int64 `json:"amount"`
+	Receiver string `json:"receiver"`
+}
+
 type MerchantHandler struct{
 	MerchantStore store.MerchantStore
 	Logger *log.Logger 
+	Client *hiero.Client
 }
 
-func NewMerchantHandler(merchantStore store.MerchantStore, logger *log.Logger) *MerchantHandler {
+func NewMerchantHandler(merchantStore store.MerchantStore, logger *log.Logger, client *hiero.Client) *MerchantHandler {
 	return &MerchantHandler{
 		MerchantStore: merchantStore,
 		Logger: logger,
+		Client: client,
 	}
 }
 
@@ -118,4 +127,37 @@ func (mh *MerchantHandler) validateRegisterRequest(registerRequest *RegisterRequ
 		return errors.New("username must be between 3 and 50 characters long")
 	}
 	return nil
+}
+
+func (mh *MerchantHandler) HandleWithdraw(w http.ResponseWriter, r *http.Request) {
+	var req WithdrawRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error while decoding withdraw request body at Decode, %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	merchant := middleware.GetMerchant(r)
+	withdrawal, err := mh.MerchantStore.Withdraw(merchant, req.Amount, req.Receiver)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error while withdrawing at Withdraw, %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"withdrawal": withdrawal})
+}
+
+func (mh *MerchantHandler) HandleGetWithdrawals(w http.ResponseWriter, r *http.Request) {
+	merchant := middleware.GetMerchant(r)
+	withdrawals, err := mh.MerchantStore.GetWithdrawals(merchant)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error while getting withdrawals at GetWithdrawals, %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"withdrawals": withdrawals})
 }

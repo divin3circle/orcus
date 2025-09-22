@@ -7,18 +7,26 @@ import (
 	"time"
 )
 
-
 type User struct {
+	ID              string    `json:"id"`
+	Username        string    `json:"username"`
+	MobileNumber    string    `json:"mobile_number"`
+	PasswordHash    password  `json:"-"`
+	EncryptedKey    string    `json:"-"`
+	AccountID       string    `json:"account_id"`
+	ProfileImageUrl string    `json:"profile_image_url"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	DeletedAt       time.Time `json:"deleted_at"`
+}
+
+type Purchase struct {
 	ID string `json:"id"`
-	Username string `json:"username"`
-	MobileNumber string `json:"mobile_number"`
-	PasswordHash password `json:"-"`
-	EncryptedKey string `json:"encrypted_key"`
-	AccountID string `json:"account_id"`
-	ProfileImageUrl string `json:"profile_image_url"`
+	UserID string `json:"user_id"`
+	Amount int64 `json:"amount"`
+	Status string `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
 }
 
 var AnonymousUser = &User{}
@@ -40,6 +48,8 @@ type UserStore interface {
 	GetUserByUsername(username string) (*User, error)
 	UpdateUser(user *User) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
+	BuyToken(userID string, amount int64) error
+	GetUserPurchases(userID string) ([]*Purchase, error)
 }
 
 func (pu *PostgresUserStore) CreateUser(user *User) (*User, error) {
@@ -112,4 +122,42 @@ func (pu *PostgresUserStore) GetUserToken(scope, tokenPlainText string) (*User, 
 		return nil, err
 	}
 	return user, nil
+}
+
+func (pu *PostgresUserStore) BuyToken(userID string, amount int64) error {
+	var purchase Purchase
+	query := `
+	INSERT INTO purchases (user_id, amount, status)
+	VALUES ($1, $2, 'confirmed')
+	RETURNING id, user_id, amount, status, created_at, updated_at
+	`
+	err := pu.db.QueryRow(query, userID, amount).Scan(&purchase.ID, &purchase.UserID, &purchase.Amount, &purchase.Status, &purchase.CreatedAt, &purchase.UpdatedAt)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pu *PostgresUserStore) GetUserPurchases(userID string) ([]*Purchase, error) {
+	query := `
+	SELECT id, user_id, amount, status, created_at, updated_at
+	FROM purchases
+	WHERE user_id = $1
+	`
+	rows, err := pu.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	purchases := []*Purchase{}
+	for rows.Next() {
+		var purchase Purchase
+		err := rows.Scan(&purchase.ID, &purchase.UserID, &purchase.Amount, &purchase.Status, &purchase.CreatedAt, &purchase.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		purchases = append(purchases, &purchase)
+	}
+	return purchases, nil
 }
