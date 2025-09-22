@@ -7,18 +7,17 @@ import (
 	"time"
 )
 
-
 type User struct {
-	ID string `json:"id"`
-	Username string `json:"username"`
-	MobileNumber string `json:"mobile_number"`
-	PasswordHash password `json:"-"`
-	EncryptedKey string `json:"encrypted_key"`
-	AccountID string `json:"account_id"`
-	ProfileImageUrl string `json:"profile_image_url"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
+	ID              string    `json:"id"`
+	Username        string    `json:"username"`
+	MobileNumber    string    `json:"mobile_number"`
+	PasswordHash    password  `json:"-"`
+	EncryptedKey    string    `json:"-"`
+	AccountID       string    `json:"account_id"`
+	ProfileImageUrl string    `json:"profile_image_url"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	DeletedAt       time.Time `json:"deleted_at"`
 }
 
 var AnonymousUser = &User{}

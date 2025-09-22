@@ -29,10 +29,10 @@ func (p *password) Matches(plainText string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plainText))
 	if err != nil {
 		switch {
-			case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-				return false, nil
-			default:
-				return false, err
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
 		}
 	}
 	return true, nil
@@ -57,15 +57,15 @@ type Merchant struct {
 }
 
 type Withdrawal struct {
-	ID string `json:"id"`
-	MerchantID string `json:"merchant_id"`
-	Amount int64 `json:"amount"`
-	Fee int64 `json:"fee"`
-	Receiver string `json:"receiver"`
-	Status string `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
+	ID         string    `json:"id"`
+	MerchantID string    `json:"merchant_id"`
+	Amount     int64     `json:"amount"`
+	Fee        int64     `json:"fee"`
+	Receiver   string    `json:"receiver"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	DeletedAt  time.Time `json:"deleted_at"`
 }
 
 var AnonymousMerchant = &Merchant{}
@@ -85,6 +85,7 @@ func NewPostgresMerchantStore(db *sql.DB) *PostgresMerchantStore {
 type MerchantStore interface {
 	CreateMerchant(merchant *Merchant) (*Merchant, error)
 	GetMerchantByUsername(username string) (*Merchant, error)
+	GetMerchantByID(id string) (*Merchant, error)
 	UpdateMerchant(merchant *Merchant) error
 	GetMerchantToken(scope, tokenPlainText string) (*Merchant, error)
 	Withdraw(merchant *Merchant, amount int64, receiver string) (*Withdrawal, error)
@@ -228,4 +229,24 @@ func (pg *PostgresMerchantStore) GetWithdrawals(merchant *Merchant) ([]*Withdraw
 		withdrawals = append(withdrawals, withdrawal)
 	}
 	return withdrawals, nil
+}
+
+func (pg *PostgresMerchantStore) GetMerchantByID(id string) (*Merchant, error) {
+	merchant := &Merchant{
+		PasswordHash: password{},
+	}
+	query := `
+	SELECT id, username, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url, created_at, updated_at
+	FROM merchants 
+	WHERE id = $1
+	`
+
+	err := pg.db.QueryRow(query, id).Scan(&merchant.ID, &merchant.Username, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.CreatedAt, &merchant.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return merchant, nil
 }
