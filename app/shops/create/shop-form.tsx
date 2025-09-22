@@ -4,13 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Store,
-  ImageIcon,
-  Palette,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Store, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const shopSchema = z.object({
   name: z
@@ -227,6 +223,7 @@ function Step2({
 
 export function ShopForm({ className, ...props }: React.ComponentProps<"div">) {
   const [currentStep, setCurrentStep] = useState(1);
+  const router = useRouter();
 
   const form = useForm<ShopFormData>({
     resolver: zodResolver(shopSchema),
@@ -248,7 +245,9 @@ export function ShopForm({ className, ...props }: React.ComponentProps<"div">) {
   const handleSubmit = (data: ShopFormData) => {
     console.log("Shop data:", data);
     // Here you would typically send the data to your API
-    alert("Shop created successfully!");
+
+    toast.success("Shop created successfully!");
+    router.push("/dashboard");
   };
 
   return (

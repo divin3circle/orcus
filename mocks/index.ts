@@ -187,3 +187,48 @@ export const mockCampaigns = [
     updated_at: "2024-01-30T16:30:00Z",
   },
 ];
+
+export const mockNotifications = [
+  {
+    id: "550e8400-e29b-41d4-a716-446655440300",
+    title: "New Campaign",
+    description: "A new campaign has been created",
+    image:
+      "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=100&h=100&fit=crop",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440301",
+    title: "New Order",
+    description: "A new order has been created",
+    image:
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100&h=100&fit=crop",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440302",
+    title: "Payment Successful",
+    description: "A new order has been created",
+    image:
+      "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=100&h=100&fit=crop",
+  },
+  {
+    id: "550e8400-e29c-41d4-a716-446655440300",
+    title: "New Campaign",
+    description: "A new campaign has been created",
+    image:
+      "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=100&h=100&fit=crop",
+  },
+  {
+    id: "550e8400-e29d-41d4-a716-446655440301",
+    title: "New Order",
+    description: "A new order has been created",
+    image:
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100&h=100&fit=crop",
+  },
+  {
+    id: "550e8400-e2fb-41d4-a716-446655440302",
+    title: "Payment Successful",
+    description: "A new order has been created",
+    image:
+      "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=100&h=100&fit=crop",
+  },
+];

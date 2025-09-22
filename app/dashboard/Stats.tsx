@@ -1,9 +1,12 @@
+"use client";
 import React from "react";
 import IncomeChart from "./IncomeChart";
 import withdraw from "@/public/withdraw.png";
 import ShopPerformanceChart from "./ShopPerformanceChart";
+import { useCustomerStore } from "@/lib/store";
 
 function Stats() {
+  const { showBalance } = useCustomerStore();
   return (
     <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-[55%] flex flex-col-reverse md:flex-row justify-between w-full">
       <div className="md:w-1/2 md:border-r border-foreground/30  h-full">
@@ -13,7 +16,9 @@ function Stats() {
             <p className="text-sm text-foreground/80">September 2025</p>
           </div>
           <div className="flex items-end justify-between h-full md:h-[85%]">
-            <h1 className="text-lg px-2 font-semibold">KES 10,000</h1>
+            <h1 className="text-lg px-2 font-semibold">
+              KES {showBalance ? "10,000" : "******"}
+            </h1>
             <div className="w-1/2 h-full">
               <IncomeChart />
             </div>
@@ -25,7 +30,9 @@ function Stats() {
             <p className="text-sm text-foreground/80">Last 30 days</p>
           </div>
           <div className="flex items-end justify-between">
-            <h1 className="text-lg px-2 font-semibold">KES 536</h1>
+            <h1 className="text-lg px-2 font-semibold">
+              KES {showBalance ? "536" : "*******"}
+            </h1>
             <div className="w-1/2 h-full">
               <img
                 src={withdraw.src}

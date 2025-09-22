@@ -4,11 +4,11 @@ import { IconEye, IconEyeOff, IconPlus } from "@tabler/icons-react";
 import React from "react";
 import ShopCards from "./ShopCards";
 import { useRouter } from "next/navigation";
-
-const showBalance = true;
+import { useCustomerStore } from "@/lib/store";
 
 function Balance() {
   const navigate = useRouter();
+  const { showBalance, toggleShowBalance } = useCustomerStore();
   return (
     <div className="border border-foreground/30 rounded-xl h-auto md:h-[45%] p-4">
       <div className="flex items-center justify-between mb-4">
@@ -28,14 +28,20 @@ function Balance() {
             KES
           </h1>
           <h1 className="text-4xl md:text-4xl">
-            {showBalance ? "10, 524.15" : "********"}
+            {showBalance ? "10, 524.15" : "**********"}
           </h1>
         </div>
         <div className="">
           {showBalance ? (
-            <IconEyeOff className="text-foreground/80 cursor-pointer" />
+            <IconEyeOff
+              className="text-foreground/80 cursor-pointer"
+              onClick={toggleShowBalance}
+            />
           ) : (
-            <IconEye className="text-foreground/80 cursor-pointer" />
+            <IconEye
+              className="text-foreground/80 cursor-pointer"
+              onClick={toggleShowBalance}
+            />
           )}
         </div>
       </div>

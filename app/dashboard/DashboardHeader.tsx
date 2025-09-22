@@ -4,6 +4,18 @@ import React from "react";
 import Image from "next/image";
 import logo from "@/public/dark-logo.png";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import NotificationCard from "./NotificationCard";
+import { mockNotifications } from "@/mocks";
 
 function DashboardHeader() {
   return (
@@ -21,13 +33,49 @@ function DashboardHeader() {
         >
           Connect Wallet
         </Button>
-        <Button
-          variant="outline"
-          size={"icon"}
-          className="bg-transparent border-[1px] shadow-none hover:bg-foreground/5 border-foreground/50  rounded-full text-foreground flex items-center justify-center"
-        >
-          <IconBell />
-        </Button>
+        <Drawer>
+          <DrawerTrigger>
+            <Button
+              variant="outline"
+              size={"icon"}
+              className="bg-transparent border-[1px] shadow-none hover:bg-foreground/5 border-foreground/50  rounded-full text-foreground flex items-center justify-center"
+            >
+              <IconBell />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="bg-[#d9d9d9]">
+            <DrawerHeader>
+              <DrawerTitle>Notifications</DrawerTitle>
+              <DrawerDescription>
+                Get notified about new campaigns and payments.
+              </DrawerDescription>
+              <div className="flex flex-col gap-2 mt-4 md:w-[500px] w-full mx-auto my-0">
+                {mockNotifications.slice(0, 5).map((notification) => (
+                  <NotificationCard
+                    key={notification.id}
+                    notification={notification}
+                  />
+                ))}
+                {mockNotifications.length > 5 && (
+                  <p className="text-sm text-foreground/80">
+                    +{mockNotifications.length - 5} More
+                  </p>
+                )}
+              </div>
+            </DrawerHeader>
+            <DrawerFooter className="md:w-[500px] w-full mx-auto my-0">
+              <DrawerClose>
+                <Button
+                  variant="outline"
+                  className="bg-foreground text-background hover:text-background hover:bg-foreground/90 w-full"
+                >
+                  Cancel
+                </Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+
         <Avatar>
           <AvatarImage src="https://github.com/shadcn.png" />
           <AvatarFallback>CN</AvatarFallback>

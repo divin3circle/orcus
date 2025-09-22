@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { mockShops } from "@/mocks";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const campaignSchema = z.object({
   shop_id: z.string().min(1, "Please select a shop"),
@@ -71,10 +73,10 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
         <div className="space-y-2">
           <Label htmlFor="shop_id">Select Shop</Label>
           <Select onValueChange={(value) => setValue("shop_id", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a shop for your campaign" />
+            <SelectTrigger className="shadow-none border-foreground/30 border-[1px] w-full md:w-1/2">
+              <SelectValue placeholder="Select a shop" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="shadow-none border-foreground/10 border-[1px]">
               {mockShops.map((shop) => (
                 <SelectItem key={shop.id} value={shop.id}>
                   <div className="flex items-center gap-2">
@@ -100,7 +102,10 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
             id="name"
             placeholder="e.g., Summer Sale 2024"
             {...register("name")}
-            className={cn(errors.name && "border-destructive")}
+            className={cn(
+              errors.name && "border-destructive",
+              "shadow-none border-foreground/30 border-[1px]"
+            )}
           />
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -114,7 +119,10 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
             placeholder="Describe your campaign goals and what customers can expect..."
             rows={4}
             {...register("description")}
-            className={cn(errors.description && "border-destructive")}
+            className={cn(
+              errors.description && "border-destructive",
+              "shadow-none border-foreground/30 border-[1px]"
+            )}
           />
           {errors.description && (
             <p className="text-sm text-destructive">
@@ -130,7 +138,10 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
             type="number"
             placeholder="10000"
             {...register("target_tokens", { valueAsNumber: true })}
-            className={cn(errors.target_tokens && "border-destructive")}
+            className={cn(
+              errors.target_tokens && "border-destructive",
+              "shadow-none border-foreground/30 border-[1px]"
+            )}
           />
           {errors.target_tokens && (
             <p className="text-sm text-destructive">
@@ -195,7 +206,10 @@ function Step2({
               type="url"
               placeholder="https://example.com/icon.png"
               {...register("icon")}
-              className={cn(errors.icon && "border-destructive")}
+              className={cn(
+                errors.icon && "border-destructive",
+                "shadow-none border-foreground/30 border-[1px]"
+              )}
             />
           ) : (
             <div className="space-y-2">
@@ -238,7 +252,10 @@ function Step2({
               type="url"
               placeholder="https://example.com/banner.png"
               {...register("banner_image_url")}
-              className={cn(errors.banner_image_url && "border-destructive")}
+              className={cn(
+                errors.banner_image_url && "border-destructive",
+                "shadow-none border-foreground/30 border-[1px]"
+              )}
             />
           ) : (
             <div className="space-y-2">
@@ -302,6 +319,7 @@ export function CampaignForm({
   ...props
 }: React.ComponentProps<"div">) {
   const [currentStep, setCurrentStep] = useState(1);
+  const router = useRouter();
 
   const form = useForm<CampaignFormData>({
     resolver: zodResolver(campaignSchema),
@@ -326,7 +344,8 @@ export function CampaignForm({
   const handleSubmit = (data: CampaignFormData) => {
     console.log("Campaign data:", data);
     // Here you would typically send the data to your API
-    alert("Campaign created successfully!");
+    toast.success("Campaign created successfully!");
+    router.push("/dashboard");
   };
 
   return (

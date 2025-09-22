@@ -22,7 +22,7 @@ function Withdraw() {
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md size-20"
+            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md size-16"
           >
             {(index + 1) * 25}%
           </div>
