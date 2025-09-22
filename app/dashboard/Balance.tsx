@@ -1,11 +1,14 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { IconEye, IconEyeOff, IconPlus } from "@tabler/icons-react";
 import React from "react";
 import ShopCards from "./ShopCards";
+import { useRouter } from "next/navigation";
 
 const showBalance = true;
 
 function Balance() {
+  const navigate = useRouter();
   return (
     <div className="border border-foreground/30 rounded-xl h-auto md:h-[45%] p-4">
       <div className="flex items-center justify-between mb-4">
@@ -13,6 +16,7 @@ function Balance() {
         <Button
           variant="outline"
           className="bg-transparent border-foreground/30 border-[1px] hover:bg-foreground/5"
+          onClick={() => navigate.push("/shops/create")}
         >
           <IconPlus className="size-4" />
           <p className="text-base hidden md:block">Add Shop</p>
