@@ -89,7 +89,7 @@ func NewApplication() (*Application, error) {
 	transactionStore := store.NewPostgresTransactionStore(pgDB)
 
 	// handlers
-	mh := api.NewMerchantHandler(merchantStore, logger)
+	mh := api.NewMerchantHandler(merchantStore, logger, client)
 	sh := api.NewShopHandler(shopStore, logger)
 	th := api.NewTokenHandler(tokenStore, merchantStore, userStore, userTokenStore, logger)
 	mwh := middleware.NewMerchantMiddleware(merchantStore, userStore)

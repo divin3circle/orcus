@@ -3,10 +3,11 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"log"
 	"net/http"
 	"os"
+
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
@@ -21,7 +22,6 @@ type TransactionRequest struct {
 	Username   string `json:"username"`
 	MerchantID string `json:"merchant_id"`
 	Amount     int64  `json:"amount"`
-	Fee        int64  `json:"fee"`
 }
 
 type TransactionResponse struct {
@@ -58,6 +58,7 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
+	th.Logger.Printf("Transaction request: %+v", transactionRequest)
 	err = th.validateTransactionRequest(&transactionRequest)
 	if err != nil {
 		th.Logger.Printf("ERROR: error validating transaction request at validateTransactionRequest: %v", err)
@@ -108,10 +109,11 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+	amount := transactionRequest.Amount * TOKENDECIMALS
 
 	tokenTransferTransaction, err := hiero.NewTransferTransaction().
-		AddTokenTransfer(tokenId, userAccountID, -transactionRequest.Amount).
-		AddTokenTransfer(tokenId, merchantAccountId, transactionRequest.Amount).
+		AddTokenTransfer(tokenId, userAccountID, -amount).
+		AddTokenTransfer(tokenId, merchantAccountId, amount).
 		FreezeWith(th.Client)
 	if err != nil {
 		th.Logger.Printf("ERROR: error freezing transaction: %v", err)
@@ -148,7 +150,7 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 	// create the transaction in the db
 	var transaction = &store.Transaction{}
 	transaction.Fee = parseFeesToInt64(fees)
-	transaction.Amount = transactionRequest.Amount
+	transaction.Amount = transactionRequest.Amount * TOKENDECIMALS
 	transaction.Status = "completed"
 	transaction.MerchantID = transactionRequest.MerchantID
 	transaction.ShopID = transactionRequest.ShopID
@@ -251,17 +253,14 @@ func (th *TransactionHandler) validateTransactionRequest(transactionRequest *Tra
 	if transactionRequest.Amount <= 0 {
 		return errors.New("amount is required")
 	}
-	if transactionRequest.Fee <= 0 {
-		return errors.New("fee is required")
-	}
 	return nil
 }
 
 func calculateFeesInKsh(amount int64) float64 {
-	if amount <= 1000 {
-		return float64(1)
+	if amount <= 100 {
+		return float64(0)
 	} else {
-		return 0.05 * float64(amount)
+		return 0.005 * float64(amount)
 	}
 }
 

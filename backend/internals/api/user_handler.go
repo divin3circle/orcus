@@ -3,9 +3,12 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
@@ -19,6 +22,11 @@ type UserRegisterRequest struct {
 	ProfileImageUrl string `json:"profile_image_url"`
 }
 
+type UserBuyTokenRequest struct {
+	Amount int64 `json:"amount"`
+	UserID string `json:"user_id"`
+}
+
 type UserHandler struct {
 	UserStore store.UserStore
 	Logger    *log.Logger
@@ -30,9 +38,15 @@ func NewUserHandler(userStore store.UserStore, logger *log.Logger, client *hiero
 }
 
 func (uh *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+	tokenId, err := hiero.TokenIDFromString(os.Getenv("KSH_TOKEN_ID"))
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting token id: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
 	var req UserRegisterRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		uh.Logger.Printf("ERROR: error decoding user register request body at Decode: %v", err)
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
@@ -92,6 +106,30 @@ func (uh *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) 
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+
+	associateTokenTxn, err := hiero.NewTokenAssociateTransaction().
+		SetAccountID(userAccountID).
+		SetTokenIDs(tokenId).
+		FreezeWith(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error creating token associate transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	transactionResponse, err := associateTokenTxn.Sign(newPrivateKey).Execute(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error executing token associate transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	receipt, err = transactionResponse.GetReceipt(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting receipt response for token associate transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	uh.Logger.Printf("KSH token associated successfully with user account: %v", receipt.AccountID)
+
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"user": createdUser})
 }
 
@@ -110,6 +148,45 @@ func (uh *UserHandler) HandleGetUserByUsername(w http.ResponseWriter, r *http.Re
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"user": user})
+}
+
+func (uh *UserHandler) HandleBuyToken(w http.ResponseWriter, r *http.Request) {
+	var req UserBuyTokenRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error decoding user buy token request body at Decode: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	// TODO: Add payment validation from Daraja or Stripe API
+	// TODO: Transfer KSH token from operator account to user account
+
+	err = uh.UserStore.BuyToken(req.UserID, req.Amount)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error buying token in BuyToken: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	message := fmt.Sprintf("KSH token bought successfully for %d KSH", req.Amount)
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": message})
+}
+
+func (uh *UserHandler) HandleGetUserPurchases(w http.ResponseWriter, r *http.Request) {
+	userID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		uh.Logger.Printf("ERROR: error reading user id in ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	purchases, err := uh.UserStore.GetUserPurchases(userID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting user purchases in GetUserPurchases: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"purchases": purchases})
 }
 
 func (uh *UserHandler) validateRegisterRequest(registerRequest *UserRegisterRequest) error {

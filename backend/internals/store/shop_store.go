@@ -11,6 +11,7 @@ type Shop struct {
 	ID              string          `json:"id"`
 	MerchantID      string          `json:"merchant_id"`
 	Name            string          `json:"name"`
+	Theme           string          `json:"theme"`
 	PaymentID       string          `json:"payment_id"`
 	ProfileImageUrl string          `json:"profile_image_url"`
 	Campaigns       []CampaignEntry `json:"campaigns"`
@@ -55,12 +56,12 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 	paymentId := uuid.NewString()
 
 	query :=
-		`INSERT INTO shops (merchant_id, name, payment_id, profile_image_url)
-		VALUES ($1, $2, $3, $4)
+		`INSERT INTO shops (merchant_id, name, theme, payment_id, profile_image_url)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 
-	err = tx.QueryRow(query, shop.MerchantID, shop.Name, paymentId, shop.ProfileImageUrl).Scan(&shop.ID)
+	err = tx.QueryRow(query, shop.MerchantID, shop.Name, shop.Theme, paymentId, shop.ProfileImageUrl).Scan(&shop.ID)
 
 	if err != nil {
 		return nil, err
@@ -73,7 +74,7 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 		RETURNING id
 		`
 
-		err = tx.QueryRow(query, shop.ID, campaign.Name, campaign.TokenID, campaign.Description, campaign.Target, campaign.Distributed, campaign.Ended, campaign.Icon, campaign.BannerImageUrl).Scan(&shop.ID)
+		err = tx.QueryRow(query, shop.ID, campaign.Name, campaign.TokenID, campaign.Description, campaign.Target, campaign.Distributed, campaign.Ended, campaign.Icon, campaign.BannerImageUrl).Scan(&campaign.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -90,11 +91,11 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 func (pg *PostgresShopStore) GetShopByID(id string) (*Shop, error) {
 	shop := &Shop{}
 	query := `
-	SELECT id, name, payment_id, profile_image_url
+	SELECT id, name, theme, payment_id, profile_image_url
 	FROM shops
 	WHERE id = $1
 	`
-	err := pg.db.QueryRow(query, id).Scan(&shop.ID, &shop.Name, &shop.PaymentID, &shop.ProfileImageUrl)
+	err := pg.db.QueryRow(query, id).Scan(&shop.ID, &shop.Name, &shop.Theme, &shop.PaymentID, &shop.ProfileImageUrl)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -141,11 +142,11 @@ func (pg *PostgresShopStore) UpdateShop(shop *Shop) error {
 
 	query := `
 	UPDATE shops
-	SET name = $1, profile_image_url = $2
-	WHERE id = $3
+	SET name = $1, theme = $2, profile_image_url = $3
+	WHERE id = $4
 	`
 
-	result, err := tx.Exec(query, shop.Name, shop.ProfileImageUrl, shop.ID)
+	result, err := tx.Exec(query, shop.Name, shop.Theme, shop.ProfileImageUrl, shop.ID)
 	if err != nil {
 		return err
 	}
@@ -169,7 +170,7 @@ func (pg *PostgresShopStore) UpdateShop(shop *Shop) error {
 
 	for _, campaign := range shop.Campaigns {
 		query := `
-		INSERT INTO campaigns (shop_id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url)
+		INSERT INTO campaigns (shop_id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url, theme)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 		`

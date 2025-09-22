@@ -10,6 +10,7 @@ import (
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
 	"github.com/go-chi/chi/v5"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 type RegisterRequest struct {
@@ -30,12 +31,14 @@ type WithdrawRequest struct {
 type MerchantHandler struct{
 	MerchantStore store.MerchantStore
 	Logger *log.Logger 
+	Client *hiero.Client
 }
 
-func NewMerchantHandler(merchantStore store.MerchantStore, logger *log.Logger) *MerchantHandler {
+func NewMerchantHandler(merchantStore store.MerchantStore, logger *log.Logger, client *hiero.Client) *MerchantHandler {
 	return &MerchantHandler{
 		MerchantStore: merchantStore,
 		Logger: logger,
+		Client: client,
 	}
 }
 

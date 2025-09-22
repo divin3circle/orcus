@@ -61,8 +61,10 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Get("/users/{username}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserByUsername))
 		r.Get("/transactions/user/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleGetTransactionsByUserID))
 		r.Get("/transactions/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleGetTransactionByID))
-		
+		r.Get("/purchases/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserPurchases))
+
 		r.Post("/transactions", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleCreateTransaction))
+		r.Post("/purchases", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleBuyToken))
 	})
 
 	r.Get("/health", orcus.HealthCheck)
