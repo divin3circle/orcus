@@ -114,6 +114,8 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 	}
 
 	if updateShopRequest.Campaigns != nil {
+		// create an hts token for each campaign with the target as the max cap
+		
 		existingShop.Campaigns = updateShopRequest.Campaigns
 	}
 
@@ -151,4 +153,22 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 	}
 
 	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": existingShop})
+}
+
+func (sh *ShopHandler) HandlerGetShopCampaigns(w http.ResponseWriter, r *http.Request) {
+	shopID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	campaigns, err := sh.ShopStore.GetShopCampaigns(shopID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop campaigns GetShopCampaigns: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
 }

@@ -42,6 +42,7 @@ type ShopStore interface {
 	GetShopByID(id string) (*Shop, error)
 	UpdateShop(*Shop) error
 	GetShopOwner(id string) (string, error)
+	GetShopCampaigns(id string) ([]*CampaignEntry, error)
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -201,4 +202,29 @@ func (pg *PostgresShopStore) GetShopOwner(id string) (string, error) {
 		return "", err
 	}
 	return merchantID, nil
+}
+
+func (pg *PostgresShopStore) GetShopCampaigns(id string) ([]*CampaignEntry, error) {
+	query := `
+	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url
+	FROM campaigns
+	WHERE shop_id = $1
+	`
+	campaigns, err := pg.db.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer campaigns.Close()
+
+	result := []*CampaignEntry{}
+	for campaigns.Next() {
+		var campaign CampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &campaign)
+	}
+
+	return result, nil
 }
