@@ -225,7 +225,7 @@ func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request
 	err = uh.UserStore.JoinCampaign(req.UserID, req.CampaignID, req.TokenBalance)
 	if err != nil {
 		uh.Logger.Printf("ERROR: error joining campaign in JoinCampaign: %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
 

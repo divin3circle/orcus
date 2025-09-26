@@ -173,11 +173,19 @@ func (pu *PostgresUserStore) GetUserPurchases(userID string) ([]*Purchase, error
 }
 
 func (pu *PostgresUserStore) JoinCampaign(userID string, campaignID string, tokenBalance int64) error {
+	isParticipant, err := pu.IsParticipant(userID, campaignID)
+	if err != nil {
+		return err
+	}
+	
+	if isParticipant {
+		return errors.New("user is already participating in this campaign")
+	}
 	query := `
 	INSERT INTO campaigns_entry (user_id, campaign_id, token_balance)
 	VALUES ($1, $2, $3)
 	`
-	_, err := pu.db.Exec(query, userID, campaignID, tokenBalance)
+	_, err = pu.db.Exec(query, userID, campaignID, tokenBalance)
 	return err
 }
 
