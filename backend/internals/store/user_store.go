@@ -29,6 +29,12 @@ type Purchase struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type UserCampaignEntry struct {
+	ID string `json:"id"`
+	CampaignID string `json:"campaign_id"`
+	TokenBalance int64 `json:"token_balance"`
+}
+
 var AnonymousUser = &User{}
 
 func (u User) IsAnonymous() bool {
@@ -53,7 +59,7 @@ type UserStore interface {
 	JoinCampaign(userID string, campaignID string, tokenBalance int64) error
 	UpdateCampaignEntry(userID string, campaignID string, tokenBalance int64) error
 	IsParticipant(userID string, campaignID string) (bool, error)
-	GetUserCampaigns(userID string) ([]*CampaignEntry, error)
+	GetUserCampaigns(userID string) ([]*UserCampaignEntry, error)
 }
 
 func (pu *PostgresUserStore) CreateUser(user *User) (*User, error) {
@@ -211,9 +217,9 @@ func (pu *PostgresUserStore) IsParticipant(userID string, campaignID string) (bo
 	return exists, nil
 }
 
-func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*CampaignEntry, error) {
+func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*UserCampaignEntry, error) {
 	query := `
-	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url
+	SELECT id, campaign_id, token_balance
 	FROM campaigns_entry
 	WHERE user_id = $1
 	`
@@ -223,10 +229,10 @@ func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*CampaignEntry, 
 	}
 	defer campaigns.Close()
 
-	result := []*CampaignEntry{}
+	result := []*UserCampaignEntry{}
 	for campaigns.Next() {
-		var campaign CampaignEntry
-		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl)
+		var campaign UserCampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.CampaignID, &campaign.TokenBalance)
 		if err != nil {
 			return nil, err
 		}

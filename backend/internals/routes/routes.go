@@ -50,7 +50,7 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Get("/transactions/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionByID))
 		r.Get("/transactions/shop/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionsByShopID))
 		r.Get("/transactions/merchant/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionsByMerchantID))
-		r.Get("/campaigns/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopCampaigns))
+		r.Get("/my-campaigns/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopCampaigns))
 
 		r.Put("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerUpdateShop))
 
@@ -65,10 +65,9 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Get("/purchases/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserPurchases))
 		r.Get("/campaigns/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserCampaigns))
 		r.Post("/campaigns", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleJoinCampaign))
+
 		r.Post("/campaigns/is-participant", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleIsParticipant))
 		r.Post("/campaigns/update", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleUpdateCampaignEntry))
-		r.Get("/campaigns/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserCampaigns))
-
 		r.Post("/transactions", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleCreateTransaction))
 		r.Post("/purchases", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleBuyToken))
 	})

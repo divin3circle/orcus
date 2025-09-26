@@ -90,7 +90,7 @@ func NewApplication() (*Application, error) {
 
 	// handlers
 	mh := api.NewMerchantHandler(merchantStore, logger, client)
-	sh := api.NewShopHandler(shopStore, logger)
+	sh := api.NewShopHandler(shopStore, logger, client)
 	th := api.NewTokenHandler(tokenStore, merchantStore, userStore, userTokenStore, logger)
 	mwh := middleware.NewMerchantMiddleware(merchantStore, userStore)
 	uh := api.NewUserHandler(userStore, logger, client)

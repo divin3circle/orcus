@@ -103,6 +103,6 @@ func (th *TokenHandler) HandleCreateUserToken(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"token": token})
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"token": token, "user_id": user.ID})
 }
 

@@ -6,19 +6,23 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/divin3circle/orcus/backend/internals/middleware"
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 type ShopHandler struct{
 	ShopStore store.ShopStore
 	Logger *log.Logger
+	Client *hiero.Client
 }
 
-func NewShopHandler(shopStore store.ShopStore, logger *log.Logger) *ShopHandler {
-	return &ShopHandler{ShopStore: shopStore, Logger: logger}
+func NewShopHandler(shopStore store.ShopStore, logger *log.Logger, client *hiero.Client) *ShopHandler {
+	return &ShopHandler{ShopStore: shopStore, Logger: logger, Client: client}
 }
 
 func (sh *ShopHandler) HandlerGetShopByID(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +76,20 @@ func (sh *ShopHandler) HandlerCreateShop(w http.ResponseWriter, r *http.Request)
 }
 
 func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request) {
+	operatorId, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ACCOUNT_ID"))
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting operator id OperatorAccountIDFromString: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+
+	}
+	privateKey, err := hiero.PrivateKeyFromStringEd25519(os.Getenv("OPERATOR_KEY"))
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting operator key PrivateKeyFromStringEd25519: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
 	shopID, err := utils.ReadIDParam(r, "id")
 	if err != nil {
 		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
@@ -98,6 +116,11 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 		Campaigns []store.CampaignEntry `json:"campaigns"`
 	}
 
+	var updateShopResponse struct {
+		Shop *store.Shop `json:"shop"`
+		TransactionResponse hiero.TransactionResponse `json:"transaction_response"`
+	}
+
 	err = json.NewDecoder(r.Body).Decode(&updateShopRequest)
 	if err != nil {
 		sh.Logger.Printf("ERROR: error decoding update shop request Decode: %v", err)
@@ -115,7 +138,32 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 
 	if updateShopRequest.Campaigns != nil {
 		// create an hts token for each campaign with the target as the max cap
+		 campaignCreationRequest := &updateShopRequest.Campaigns[0]
+		 tokenSymbol := generateTokenSymbol(campaignCreationRequest.Name)
+
+		transaction, _ := hiero.NewTokenCreateTransaction().
+        SetTokenName(campaignCreationRequest.Name).
+        SetTokenSymbol(tokenSymbol).
+        SetDecimals(2).
+        SetInitialSupply(uint64(campaignCreationRequest.Target)).
+        SetSupplyType(hiero.TokenSupplyTypeFinite).
+        SetMaxSupply(campaignCreationRequest.Target).
+        SetTreasuryAccountID(operatorId).
+        SetAdminKey(privateKey.PublicKey()).
+        SetSupplyKey(privateKey.PublicKey()).
+        SetTokenMemo(campaignCreationRequest.Description).
+        FreezeWith(sh.Client)
+
+		signedTx := transaction.Sign(privateKey)
+		txResponse, _ := signedTx.Execute(sh.Client)
+		receipt, _ := txResponse.GetReceipt(sh.Client)
+		updateShopResponse.TransactionResponse = txResponse
+		tokenId := *receipt.TokenID
+
+		sh.Logger.Printf("Token created: %s\n", tokenId.String())
+		campaignCreationRequest.TokenID = tokenId.String()
 		
+
 		existingShop.Campaigns = updateShopRequest.Campaigns
 	}
 
@@ -151,8 +199,9 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+	updateShopResponse.Shop = existingShop
 
-	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": existingShop})
+	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"response": updateShopResponse})
 }
 
 func (sh *ShopHandler) HandlerGetShopCampaigns(w http.ResponseWriter, r *http.Request) {
@@ -171,4 +220,13 @@ func (sh *ShopHandler) HandlerGetShopCampaigns(w http.ResponseWriter, r *http.Re
 	}
 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
+}
+
+func generateTokenSymbol(name string) string {
+	names := strings.Split(name, " ")
+	symbol := ""
+	for _, name := range names {
+		symbol += strings.ToUpper(name[:1])
+	}
+	return symbol
 }
