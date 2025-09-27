@@ -222,6 +222,23 @@ func (sh *ShopHandler) HandlerGetShopCampaigns(w http.ResponseWriter, r *http.Re
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
 }
 
+func (sh *ShopHandler) HandlerGetShopsByMerchantID(w http.ResponseWriter, r *http.Request) {
+	merchantID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting merchant by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	shops, err := sh.ShopStore.GetShopsByMerchantID(merchantID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shops by merchant id GetShopsByMerchantID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shops": shops})
+}
+
 func generateTokenSymbol(name string) string {
 	names := strings.Split(name, " ")
 	symbol := ""

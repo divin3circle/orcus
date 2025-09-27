@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ChevronLeft, ChevronRight, Store, ImageIcon } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Store,
+  ImageIcon,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useCreateShop } from "@/hooks/useMyShops";
 
 const shopSchema = z.object({
   name: z
@@ -124,10 +131,12 @@ function Step2({
   form,
   onBack,
   onSubmit,
+  isPending,
 }: {
   form: any;
   onBack: () => void;
   onSubmit: (data: ShopFormData) => void;
+  isPending: boolean;
 }) {
   const {
     register,
@@ -212,9 +221,17 @@ function Step2({
         </Button>
         <Button
           onClick={handleSubmit(onSubmit)}
+          disabled={isPending}
           className="flex-1 bg-foreground text-background hover:bg-foreground/90"
         >
-          Create Shop
+          {isPending ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            "Create Shop"
+          )}
         </Button>
       </div>
     </div>
@@ -223,7 +240,7 @@ function Step2({
 
 export function ShopForm({ className, ...props }: React.ComponentProps<"div">) {
   const [currentStep, setCurrentStep] = useState(1);
-  const router = useRouter();
+  const createShopMutation = useCreateShop();
 
   const form = useForm<ShopFormData>({
     resolver: zodResolver(shopSchema),
@@ -243,11 +260,11 @@ export function ShopForm({ className, ...props }: React.ComponentProps<"div">) {
   };
 
   const handleSubmit = (data: ShopFormData) => {
-    console.log("Shop data:", data);
-    // Here you would typically send the data to your API
-
-    toast.success("Shop created successfully!");
-    router.push("/dashboard");
+    createShopMutation.mutate({
+      name: data.name,
+      profile_image_url: data.profile_image_url || "",
+      theme: data.theme,
+    });
   };
 
   return (
@@ -285,7 +302,12 @@ export function ShopForm({ className, ...props }: React.ComponentProps<"div">) {
 
       {currentStep === 1 && <Step1 form={form} onNext={handleNext} />}
       {currentStep === 2 && (
-        <Step2 form={form} onBack={handleBack} onSubmit={handleSubmit} />
+        <Step2
+          form={form}
+          onBack={handleBack}
+          onSubmit={handleSubmit}
+          isPending={createShopMutation.isPending}
+        />
       )}
     </div>
   );

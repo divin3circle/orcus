@@ -44,7 +44,7 @@ function Withdraw() {
           <div
             key={index}
             onClick={() => setAmount(calculateWithdrawalAmount(index))}
-            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md size-20"
+            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md size-[78px]"
           >
             {(index + 1) * 25}%
           </div>

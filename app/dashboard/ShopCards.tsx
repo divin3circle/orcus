@@ -1,6 +1,6 @@
+"use client";
 import React from "react";
 import ShopCard from "./ShopCard";
-import { mockShops } from "@/mocks";
 import { useMyShops } from "@/hooks/useMyShops";
 import { Loader2 } from "lucide-react";
 
@@ -27,7 +27,7 @@ function ShopCards() {
     <div className="mt-4">
       <h1 className="text-xl font-semibold">Featured Shops</h1>
       <div className=" flex gap-4 flex-col md:flex-row mt-4">
-        {mockShops.slice(0, 2).map((shop) => (
+        {shops.slice(0, 2).map((shop) => (
           <ShopCard key={shop.id} shop={shop} />
         ))}
       </div>
