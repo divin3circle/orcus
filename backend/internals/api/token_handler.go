@@ -64,7 +64,7 @@ func (th *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"token": token})
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"token": token, "merchant_id": merchant.ID})
 }
 
 func (th *TokenHandler) HandleCreateUserToken(w http.ResponseWriter, r *http.Request) {

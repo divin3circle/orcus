@@ -20,9 +20,11 @@ import {
   IconDownload,
 } from "@tabler/icons-react";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
+import { formatBalance } from "@/hooks/useBalances";
 
 function RecentTransaction({ txn }: { txn: Transaction }) {
   const { data: shop } = useGetShopByID(txn.shop_id);
+  console.log("txn", txn);
   if (!shop) return null;
 
   const formatDate = (date: string) => {
@@ -33,21 +35,23 @@ function RecentTransaction({ txn }: { txn: Transaction }) {
     });
   };
 
+  console.log("shop", shop);
+
   return (
     <div className="flex items-start justify-between p-2 rounded-lg hover:bg-foreground/5 transition-all duration-300">
       <div className="flex items-center gap-2">
         <img
           src={shop.profile_image_url}
           alt={shop.name}
-          className="size-10 rounded-full"
+          className="size-10 rounded-full border border-foreground/30"
         />
         <div className="flex flex-col">
-          <h1 className="text-sm font-semibold">{shop?.name}</h1>
+          <h1 className="text-sm font-semibold">
+            {shop?.name.slice(0, 12)}...
+          </h1>
           <div className="flex items-center gap-1">
             <h1 className="text-sm font-semibold">KES</h1>
-            <p className="text-sm font-semibold">
-              {txn.amount.toLocaleString()}
-            </p>
+            <p className="text-sm font-semibold">{formatBalance(txn.amount)}</p>
           </div>
         </div>
       </div>
@@ -71,7 +75,7 @@ function RecentTransaction({ txn }: { txn: Transaction }) {
                 <div className="flex items-center gap-1">
                   <p className="text-lg font-semibold text-foreground/80">+</p>
                   <h1 className="text-3xl font-semibold">
-                    KES {txn.amount.toLocaleString()}
+                    KES {formatBalance(txn.amount)}
                   </h1>
                 </div>
                 <div className="border p-2.5 rounded-3xl border-foreground/30 flex items-center gap-1 mb-4">
@@ -111,7 +115,7 @@ function RecentTransaction({ txn }: { txn: Transaction }) {
                       Transaction Fee
                     </p>
                     <p className="text-sm font-semibold flex items-center gap-1">
-                      KES {txn.fee.toLocaleString()}
+                      KES {formatBalance(txn.fee)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between">

@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { IconBell } from "@tabler/icons-react";
 import React from "react";
@@ -16,8 +17,30 @@ import {
 } from "@/components/ui/drawer";
 import NotificationCard from "./NotificationCard";
 import { mockNotifications } from "@/mocks";
+import { useMerchant } from "@/hooks/useMerchant";
+import { Loader2, LogOut, Wallet } from "lucide-react";
+import { useWallet } from "@/contexts/WalletContext";
 
 function DashboardHeader() {
+  const { data: merchant, isLoading, error } = useMerchant();
+  const {
+    isConnected,
+    accountId,
+    isLoading: isWalletLoading,
+    disconnect,
+  } = useWallet();
+
+  if (isLoading) {
+    return (
+      <div className="w-full items-center justify- flex flex-col mt-1">
+        <Loader2 className="w-5 h-5 animate-spin" />
+      </div>
+    );
+  }
+  if (error || !merchant) {
+    return <div>Error: {error?.message}</div>;
+  }
+
   return (
     <div className="w-full flex items-center justify-between mt-4">
       <div className="flex items-center gap-1 px-2">
@@ -31,7 +54,16 @@ function DashboardHeader() {
           variant={"outline"}
           className="bg-transparent border-[1px] shadow-none hover:bg-foreground/5 border-foreground/50  rounded-full text-foreground hidden md:block"
         >
-          Connect Wallet
+          {isWalletLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : isConnected ? (
+            <span className="flex items-center gap-1">
+              <LogOut className="w-4 h-4" />
+              {accountId}
+            </span>
+          ) : (
+            <Wallet className="w-4 h-4" />
+          )}
         </Button>
         <Drawer>
           <DrawerTrigger>
@@ -77,8 +109,13 @@ function DashboardHeader() {
         </Drawer>
 
         <Avatar>
-          <AvatarImage src="https://github.com/shadcn.png" />
-          <AvatarFallback>CN</AvatarFallback>
+          <AvatarImage
+            src={merchant.profile_image_url}
+            className="border border-foreground/50 object-cover object-center"
+          />
+          <AvatarFallback className="bg-foreground text-background flex items-center justify-center font-bold">
+            {merchant.username.charAt(0).toUpperCase()}
+          </AvatarFallback>
         </Avatar>
       </div>
     </div>

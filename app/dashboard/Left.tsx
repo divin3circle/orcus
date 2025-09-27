@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import RecentTransactions from "./RecentTransactions";
 import Shops from "./Shops";

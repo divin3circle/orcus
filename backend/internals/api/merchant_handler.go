@@ -161,3 +161,20 @@ func (mh *MerchantHandler) HandleGetWithdrawals(w http.ResponseWriter, r *http.R
 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"withdrawals": withdrawals})
 }
+
+func (mh *MerchantHandler) HandleGetMerchantByID(w http.ResponseWriter, r *http.Request) {
+	merchantID := chi.URLParam(r, "id")
+	if merchantID == "" {
+		mh.Logger.Printf("ERROR: error reading merchant id in chi.URLParam, %v", merchantID)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": merchantID})
+		return
+	}
+
+	merchant, err := mh.MerchantStore.GetMerchantByID(merchantID)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error getting merchant by id at GetMerchantByID, %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"merchant": merchant})
+}

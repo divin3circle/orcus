@@ -50,11 +50,9 @@ async function getAccountInfo(session: any): Promise<string | null> {
     if (accountId) {
       return `${alias} (${accountId})`;
     }
-    // Fallback to just alias if we can't get account ID
     return alias;
   }
 
-  // Fallback to just alias or accounts[0]
   return alias || session.accounts?.[0] || null;
 }
 
@@ -72,7 +70,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const connector = await getUniversalConnector();
         setUniversalConnector(connector);
 
-        // Listen for connection events
         connector.provider.on("session_event", async (event: any) => {
           if (event.params?.event === "connect") {
             setIsConnected(true);
@@ -84,7 +81,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        // Also listen for session update events
         connector.provider.on("session_update", async (event: any) => {
           if (event.params?.accounts) {
             setIsConnected(true);
@@ -93,26 +89,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        // Listen for connect events
         connector.provider.on("connect", async (event: any) => {
           setIsConnected(true);
           const accountInfo = await getAccountInfo(event.session);
           setAccountId(accountInfo);
         });
 
-        // Listen for disconnect events
         connector.provider.on("disconnect", (event: any) => {
           setIsConnected(false);
           setAccountId(null);
         });
 
-        // Check if already connected
         if (connector.provider.session) {
           setIsConnected(true);
           getAccountInfo(connector.provider.session).then(setAccountId);
         }
 
-        // Add a periodic check for session updates (fallback)
         const sessionCheckInterval = setInterval(async () => {
           if (connector.provider.session && !isConnected) {
             setIsConnected(true);
@@ -123,7 +115,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           }
         }, 1000);
 
-        // Cleanup interval when component unmounts
         return () => {
           clearInterval(sessionCheckInterval);
         };

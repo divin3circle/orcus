@@ -63,3 +63,4 @@ export const countries = [
     shortCode: "ET",
   },
 ];
+export const BASE_URL = "http://localhost:8080";

@@ -45,6 +45,7 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Post("/withdraw", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleWithdraw))
 
 		r.Get("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopByID))
+		r.Get("/merchants-id/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetMerchantByID))
 		r.Get("/merchants/{username}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetMerchantByUsername))
 		r.Get("/withdrawals", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetWithdrawals))
 		r.Get("/transactions/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionByID))

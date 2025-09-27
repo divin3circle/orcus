@@ -84,28 +84,6 @@ export const mockTransactions = [
     created_at: "2024-01-22T16:45:00Z",
     updated_at: "2024-01-22T16:45:00Z",
   },
-  {
-    id: "550e8400-e29b-41d4-a716-446655440101",
-    shop_id: "550e8400-e29b-41d4-a716-446655440002", // Fashion Boutique
-    user_id: "550e8400-e29b-41d4-a716-446655440011",
-    merchant_id: "550e8400-e29b-41d4-a716-446655440000",
-    amount: 1800, // KES 18.00 (in cents)
-    fee: 54, // KES 0.54 (3% fee)
-    status: "pending" as const,
-    created_at: "2024-01-21T10:15:00Z",
-    updated_at: "2024-01-21T10:15:00Z",
-  },
-  {
-    id: "550e8400-e29b-41d4-a716-446655440102",
-    shop_id: "550e8400-e29b-41d4-a716-446655440003", // Coffee Shop
-    user_id: "550e8400-e29b-41d4-a716-446655440012",
-    merchant_id: "550e8400-e29b-41d4-a716-446655440000",
-    amount: 1200, // KES 12.00 (in cents)
-    fee: 36, // KES 0.36 (3% fee)
-    status: "failed" as const,
-    created_at: "2024-01-22T16:45:00Z",
-    updated_at: "2024-01-22T16:45:00Z",
-  },
 ];
 
 export const mockCampaigns = [

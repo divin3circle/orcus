@@ -26,6 +26,7 @@
     "@tabler/icons-react": "^3.35.0",
     "@tanstack/react-query": "^5.89.0",
     "@walletconnect/modal": "^2.7.0",
+    "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "ethers": "^6.15.0",

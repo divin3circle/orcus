@@ -1,3 +1,7 @@
+import { useAuth } from "@/contexts/AuthContext";
+import { authAxios } from "@/lib/auth";
+import { useQuery } from "@tanstack/react-query";
+
 export interface Campaign {
   id: string;
   shop_id: string;
@@ -26,4 +30,27 @@ export interface CampaignStats {
   total_target_tokens: number;
   total_distributed_tokens: number;
   completion_rate: number;
+}
+
+export const useMyCampaigns = () => {
+  const { merchantId } = useAuth();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["myCampaigns"],
+    queryFn: () => getMyCampaigns(merchantId),
+    enabled: !!merchantId,
+  });
+  return { data, isLoading, error };
+};
+
+async function getMyCampaigns(
+  merchantId: string | null
+): Promise<Campaign[] | undefined> {
+  if (!merchantId) {
+    throw new Error("Merchant ID is required");
+  }
+  const response = await authAxios.get(`/my-campaigns/${merchantId}`);
+  if (response.status === 200 && !response.data.campaigns) {
+    return [];
+  }
+  return response.data.campaigns;
 }

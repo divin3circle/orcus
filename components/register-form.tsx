@@ -1,24 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Wallet,
-  LogOut,
-  Image as ImageIcon,
-  ChevronDown,
-  Globe,
-} from "lucide-react";
+import { ChevronLeft, Wallet, LogOut, ChevronDown, Globe } from "lucide-react";
 
 import { cn, countries } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,34 +27,20 @@ import {
 import Image from "next/image";
 import logo from "@/public/dark-logo.png";
 import { useWallet } from "@/contexts/WalletContext";
+import { useRegister } from "@/hooks/useRegister";
 import { IconLoader2 } from "@tabler/icons-react";
 
-// Form Schema
 const registerSchema = z
   .object({
-    // Step 1
     username: z.string().min(2, {
       message: "Username must be at least 2 characters.",
     }),
-    password: z.string().min(8, {
-      message: "Password must be at least 8 characters.",
+    password: z.string().min(4, {
+      message: "Password must be at least 4 characters.",
     }),
     confirmPassword: z.string(),
-    // Step 2
-    profileImageUrl: z
-      .string()
-      .url({
-        message: "Please enter a valid URL.",
-      })
-      .optional(),
-    bannerImageUrl: z
-      .string()
-      .url({
-        message: "Please enter a valid URL.",
-      })
-      .optional(),
-    autoOffRamp: z.boolean(),
-    // Step 3
+    profileImageUrl: z.string(),
+    bannerImageUrl: z.string(),
     countryCode: z.string().min(1, {
       message: "Please select a country code.",
     }),
@@ -86,82 +63,91 @@ const countryCodes = countries.map((country) => ({
   name: country.name,
 }));
 
-const Step1 = ({ form, onNext }: { form: any; onNext: () => void }) => (
-  <div className="space-y-6">
-    <div className="space-y-4">
-      <FormField
-        control={form.control}
-        name="username"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Username</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="sylus abel"
-                className="border-foreground/30 border-[1px] placeholder:text-foreground/50"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+const Step1 = ({ form, onNext }: { form: any; onNext: () => void }) => {
+  const watchedFields = form.watch(["username", "password", "confirmPassword"]);
+  const [username, password, confirmPassword] = watchedFields;
 
-      <FormField
-        control={form.control}
-        name="password"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Password</FormLabel>
-            <FormControl>
-              <Input
-                type="password"
-                placeholder="Enter your password"
-                className="border-foreground/30 border-[1px] placeholder:text-foreground/50"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+  const canContinue =
+    username?.trim() && password?.trim() && confirmPassword?.trim();
 
-      <FormField
-        control={form.control}
-        name="confirmPassword"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Confirm Password</FormLabel>
-            <FormControl>
-              <Input
-                type="password"
-                placeholder="Confirm your password"
-                className="border-foreground/30 border-[1px] placeholder:text-foreground/50"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="sylus abel"
+                  className="border-foreground/30 border-[1px] placeholder:text-foreground/50"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder="Enter your password"
+                  className="border-foreground/30 border-[1px] placeholder:text-foreground/50"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder="Confirm your password"
+                  className="border-foreground/30 border-[1px] placeholder:text-foreground/50"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <Button
+        type="button"
+        onClick={onNext}
+        className="w-full bg-foreground text-background hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!canContinue}
+      >
+        Continue
+      </Button>
+
+      <div className="">
+        <p className="text-xs leading-relaxed text-foreground/80">
+          This step form will take you through the process of creating your
+          merchant account on Orcus.
+        </p>
+      </div>
     </div>
-
-    <Button
-      type="button"
-      onClick={onNext}
-      className="w-full bg-foreground text-background hover:bg-foreground/80"
-    >
-      Continue
-    </Button>
-
-    <div className="">
-      <p className="text-xs leading-relaxed text-foreground/80">
-        This step form will take you through the process of creating your
-        merchant account on Orcus.
-      </p>
-    </div>
-  </div>
-);
+  );
+};
 
 const Step2 = ({
   form,
@@ -175,6 +161,9 @@ const Step2 = ({
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [bannerImage, setBannerImage] = useState<string | null>(null);
 
+  const watchedFields = form.watch(["profileImageUrl", "bannerImageUrl"]);
+  const [profileImageUrl, bannerImageUrl] = watchedFields;
+
   const handleImageUrlChange = (url: string, type: "profile" | "banner") => {
     if (url && url.startsWith("http")) {
       if (type === "profile") {
@@ -184,6 +173,7 @@ const Step2 = ({
       }
     }
   };
+  const canContinue = true;
 
   return (
     <div className="space-y-6">
@@ -285,34 +275,6 @@ const Step2 = ({
             </FormItem>
           )}
         />
-
-        <FormField
-          control={form.control}
-          name="autoOffRamp"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-foreground/20 p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Auto Off-Ramp</FormLabel>
-                <div className="text-sm text-foreground/70">
-                  Automatically convert crypto to fiat currency.{" "}
-                  <a
-                    href="#"
-                    className="underline underline-offset-4 text-blue-500 text-xs"
-                  >
-                    Learn more
-                  </a>
-                </div>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  className="data-[state=checked]:bg-foreground"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
       </div>
 
       <div className="flex gap-3">
@@ -328,7 +290,8 @@ const Step2 = ({
         <Button
           type="button"
           onClick={onNext}
-          className="flex-1 bg-foreground text-background hover:bg-foreground/80"
+          className="flex-1 bg-foreground text-background hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!canContinue}
         >
           Continue
         </Button>
@@ -360,15 +323,40 @@ const Step3 = ({
 }) => {
   const { isConnected, accountId, isLoading, connect, disconnect } =
     useWallet();
+  const registerMutation = useRegister();
+
+  const watchedFields = form.watch(["countryCode", "mobileNumber"]);
+  const [countryCode, mobileNumber] = watchedFields;
+
+  React.useEffect(() => {
+    if (isConnected && accountId) {
+      form.setValue("walletAddress", accountId);
+    } else if (!isConnected) {
+      form.setValue("walletAddress", "");
+    }
+  }, [isConnected, accountId, form]);
 
   const handleWalletConnect = async () => {
     if (!isConnected) {
       await connect();
-      form.setValue("walletAddress", accountId);
     } else {
       await disconnect();
-      form.setValue("walletAddress", "");
     }
+  };
+
+  const handleSubmit = async (data: RegisterFormData) => {
+    const extractedAccountId = accountId?.match(/\(([^)]+)\)/)?.[1] || "";
+
+    const registerData = {
+      username: data.username,
+      mobile_number: `${data.countryCode}${data.mobileNumber}`,
+      password: data.password,
+      account_id: extractedAccountId,
+      profile_image_url: data.profileImageUrl || "",
+      account_banner_image_url: data.bannerImageUrl || "",
+    };
+
+    registerMutation.mutate(registerData);
   };
 
   return (
@@ -486,11 +474,24 @@ const Step3 = ({
         </Button>
         <Button
           type="button"
-          onClick={form.handleSubmit(onSubmit)}
+          onClick={async () => {
+            const isValid = await form.trigger();
+            if (isValid) {
+              const formData = form.getValues();
+              handleSubmit(formData);
+            }
+          }}
           className="flex-1 bg-foreground text-background hover:bg-foreground/80 disabled:cursor-not-allowed"
-          disabled={!isConnected}
+          disabled={!isConnected || registerMutation.isPending}
         >
-          Create Account
+          {registerMutation.isPending ? (
+            <>
+              <IconLoader2 className="w-4 h-4 mr-2 animate-spin" />
+              Creating Account...
+            </>
+          ) : (
+            "Create Account"
+          )}
         </Button>
       </div>
 
@@ -516,7 +517,6 @@ export function RegisterForm({
       confirmPassword: "",
       profileImageUrl: "",
       bannerImageUrl: "",
-      autoOffRamp: false,
       countryCode: "",
       mobileNumber: "",
       walletAddress: "",
@@ -525,7 +525,6 @@ export function RegisterForm({
 
   const onSubmit = (data: RegisterFormData) => {
     console.log("Form submitted:", data);
-    // Handle form submission here
   };
 
   const nextStep = () => {

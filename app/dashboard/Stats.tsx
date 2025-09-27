@@ -4,20 +4,37 @@ import IncomeChart from "./IncomeChart";
 import withdraw from "@/public/withdraw.png";
 import ShopPerformanceChart from "./ShopPerformanceChart";
 import { useCustomerStore } from "@/lib/store";
+import { useTotalWithdrawals } from "@/hooks/useWithdrawals";
+import { formatBalance } from "@/hooks/useBalances";
+import { useTotalIncome, formatCurrency } from "@/hooks/useTransactions";
 
 function Stats() {
   const { showBalance } = useCustomerStore();
+  const { data: totalWithdrawals, isLoading, error } = useTotalWithdrawals();
+  const { data: totalIncome, isLoading: isIncomeLoading } = useTotalIncome();
+  const getBalanceLength = (balance: string) => {
+    if (!balance) {
+      return 0;
+    }
+    return balance.length;
+  };
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
   return (
     <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-[55%] flex flex-col-reverse md:flex-row justify-between w-full">
       <div className="md:w-1/2 md:border-r border-foreground/30  h-full">
         <div className="border-b border-foreground/30 pb-4 h-1/2 w-full">
           <div className="px-2">
             <h1 className="text-base font-semibold mt-2">Total Income</h1>
-            <p className="text-sm text-foreground/80">September 2025</p>
+            <p className="text-sm text-foreground/80">This Week</p>
           </div>
           <div className="flex items-end justify-between h-full md:h-[85%]">
             <h1 className="text-lg px-2 font-semibold">
-              KES {showBalance ? "10,000" : "******"}
+              {showBalance ? formatCurrency(totalIncome) : "******"}
             </h1>
             <div className="w-1/2 h-full">
               <IncomeChart />
@@ -31,7 +48,13 @@ function Stats() {
           </div>
           <div className="flex items-end justify-between">
             <h1 className="text-lg px-2 font-semibold">
-              KES {showBalance ? "536" : "*******"}
+              KES{" "}
+              {showBalance
+                ? formatBalance(totalWithdrawals)
+                : "*******".slice(
+                    0,
+                    getBalanceLength(formatBalance(totalWithdrawals))
+                  )}
             </h1>
             <div className="w-1/2 h-full">
               <img
