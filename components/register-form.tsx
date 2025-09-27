@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Wallet,
+  LogOut,
   Image as ImageIcon,
   ChevronDown,
   Globe,
@@ -34,6 +35,8 @@ import {
 } from "@/components/ui/form";
 import Image from "next/image";
 import logo from "@/public/dark-logo.png";
+import { useWallet } from "@/contexts/WalletContext";
+import { IconLoader2 } from "@tabler/icons-react";
 
 // Form Schema
 const registerSchema = z
@@ -355,11 +358,17 @@ const Step3 = ({
   onPrev: () => void;
   onSubmit: (data: RegisterFormData) => void;
 }) => {
+  const { isConnected, accountId, isLoading, connect, disconnect } =
+    useWallet();
+
   const handleWalletConnect = async () => {
-    // Placeholder for wallet connection logic
-    // In a real implementation, you would integrate with a wallet provider
-    const mockWalletAddress = "0x1234567890abcdef1234567890abcdef12345678";
-    form.setValue("walletAddress", mockWalletAddress);
+    if (!isConnected) {
+      await connect();
+      form.setValue("walletAddress", accountId);
+    } else {
+      await disconnect();
+      form.setValue("walletAddress", "");
+    }
   };
 
   return (
@@ -440,12 +449,26 @@ const Step3 = ({
             onClick={handleWalletConnect}
             className="w-full border-foreground/30 border-[1px] bg-transparent hover:bg-foreground/5"
           >
-            <Wallet className="w-4 h-4 mr-2 " />
-            Connect Wallet
+            {isLoading ? (
+              <>
+                <IconLoader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : isConnected ? (
+              <>
+                <LogOut className="w-4 h-4 mr-2" />
+                Disconnect
+              </>
+            ) : (
+              <>
+                <Wallet className="w-4 h-4 mr-2" />
+                Connect Wallet
+              </>
+            )}
           </Button>
-          {form.watch("walletAddress") && (
+          {isConnected && (
             <div className="text-sm text-foreground/70 p-3 bg-foreground/5 rounded-lg">
-              Connected: {form.watch("walletAddress")}
+              Connected: {accountId}
             </div>
           )}
         </div>
@@ -465,7 +488,7 @@ const Step3 = ({
           type="button"
           onClick={form.handleSubmit(onSubmit)}
           className="flex-1 bg-foreground text-background hover:bg-foreground/80 disabled:cursor-not-allowed"
-          disabled={!form.watch("walletAddress")}
+          disabled={!isConnected}
         >
           Create Account
         </Button>
