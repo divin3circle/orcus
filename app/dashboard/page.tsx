@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import DashboardHeader from "./DashboardHeader";
 import Left from "./Left";

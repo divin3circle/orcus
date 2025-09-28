@@ -17,25 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockShops } from "@/mocks";
+import { useShopPerformance, formatCurrency } from "@/hooks/useTransactions";
+import { Loader2 } from "lucide-react";
 
-export const description = "An interactive pie chart";
+export const description = "An interactive shop performance pie chart";
 
-// Generate shop data dynamically from mockShops
-const generateShopData = () => {
-  return mockShops.map((shop, index) => ({
-    shop: shop.id, // Use shop ID as unique identifier
-    balance: (index + 1) * 150, // More balanced values: 150, 300, 450, etc.
-    fill: `var(--chart-${(index % 5) + 1})`, // Use same color system as chartConfig
-    name: shop.name, // Store shop name for display
-  }));
-};
-
-// Generate chart config dynamically
-const generateChartConfig = (shops: typeof mockShops) => {
+// Generate chart config dynamically from shop performance data
+const generateChartConfig = (shopPerformance: any[]) => {
   const baseConfig = {
-    balance: {
-      label: "Balance",
+    earnings: {
+      label: "Earnings",
     },
     shop: {
       label: "Shop",
@@ -43,10 +34,10 @@ const generateChartConfig = (shops: typeof mockShops) => {
   };
 
   // Add shop-specific configs
-  const shopConfigs = shops.reduce((acc, shop, index) => {
+  const shopConfigs = shopPerformance.reduce((acc, shop) => {
     acc[shop.id] = {
       label: shop.name,
-      color: `var(--chart-${(index % 5) + 1})`,
+      color: shop.fill,
     };
     return acc;
   }, {} as Record<string, { label: string; color: string }>);
@@ -56,34 +47,83 @@ const generateChartConfig = (shops: typeof mockShops) => {
 
 export default function ShopPerformanceChart() {
   const id = "pie-interactive";
+  const { data: shopPerformance, isLoading, error } = useShopPerformance();
 
-  // Generate data and config dynamically
-  const shopData = React.useMemo(() => generateShopData(), []);
-  const chartConfig = React.useMemo(() => generateChartConfig(mockShops), []);
+  const shopData = React.useMemo(() => {
+    if (!shopPerformance || shopPerformance.length === 0) {
+      return [];
+    }
+    return shopPerformance.map((shop) => ({
+      shop: shop.id,
+      earnings: shop.totalEarnings,
+      fill: shop.fill,
+      name: shop.name,
+    }));
+  }, [shopPerformance]);
 
-  // Handle empty shops case
+  const chartConfig = React.useMemo(
+    () => generateChartConfig(shopPerformance || []),
+    [shopPerformance]
+  );
+
   const hasShops = shopData.length > 0;
   const [activeShop, setActiveShop] = React.useState(
-    hasShops ? shopData[0].shop : ""
+    hasShops ? shopData[0]?.shop || "" : ""
   );
 
   const activeIndex = React.useMemo(
     () => shopData.findIndex((item) => item.shop === activeShop),
     [activeShop, shopData]
   );
+
   const shops = React.useMemo(
     () => shopData.map((item) => item.shop),
     [shopData]
   );
 
-  // Show "No Data" state when no shops exist
+  React.useEffect(() => {
+    if (
+      hasShops &&
+      (!activeShop || !shopData.find((item) => item.shop === activeShop))
+    ) {
+      setActiveShop(shopData[0]?.shop || "");
+    }
+  }, [shopData, activeShop, hasShops]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full w-full items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin" />
+        <p className="text-sm text-muted-foreground mt-2">
+          Loading shop data...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col h-full w-full items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-2">⚠️</div>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Error Loading Data
+          </h3>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Unable to load shop performance data
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!hasShops) {
     return (
       <div className="flex flex-col h-full w-full items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-2">📊</div>
+          <div className="text-4xl mb-2">🏪</div>
           <h3 className="text-sm font-medium text-muted-foreground">
-            No Shops Yet
+            No Shops
           </h3>
           <p className="text-xs text-muted-foreground/70 mt-1">
             Create your first shop to see performance data
@@ -145,11 +185,37 @@ export default function ShopPerformanceChart() {
           <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0];
+                  const shop = shopPerformance?.find(
+                    (s) => s.id === data.payload.shop
+                  );
+
+                  return (
+                    <div className="rounded-lg border bg-background p-2 shadow-md">
+                      <div className="grid gap-2">
+                        <div className="flex flex-col">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                            {shop?.name || data.payload.shop}
+                          </span>
+                          <span className="font-bold text-muted-foreground">
+                            {formatCurrency(data.value as number)}
+                          </span>
+                          <span className="text-xs text-muted-foreground/70">
+                            {shop?.transactionCount || 0} transactions
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
             <Pie
               data={shopData}
-              dataKey="balance"
+              dataKey="earnings"
               nameKey="shop"
               innerRadius={80}
               strokeWidth={3}
@@ -181,10 +247,9 @@ export default function ShopPerformanceChart() {
                         <tspan
                           x={viewBox.cx}
                           y={viewBox.cy}
-                          className="fill-foreground text-lg font-bold"
+                          className="fill-foreground text-sm font-bold"
                         >
-                          KES{" "}
-                          {shopData[activeIndex]?.balance.toLocaleString() || 0}
+                          {formatCurrency(shopData[activeIndex]?.earnings)}
                         </tspan>
                         <tspan
                           x={viewBox.cx}

@@ -3,8 +3,10 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/divin3circle/orcus/backend/internals/middleware"
 	"github.com/divin3circle/orcus/backend/internals/store"
@@ -26,6 +28,12 @@ type RegisterRequest struct {
 type WithdrawRequest struct {
 	Amount int64 `json:"amount"`
 	Receiver string `json:"receiver"`
+}
+
+type NotificationMessage struct {
+	Type string `json:"type"`
+	MessageContent string `json:"message_content"`
+	Timestamp int64 `json:"timestamp"`
 }
 
 type MerchantHandler struct{
@@ -90,6 +98,7 @@ func (mh *MerchantHandler) HandleCreateMerchant(w http.ResponseWriter, r *http.R
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
+	merchant.TopicID = mh.generateTopicID(w, merchant)
 
 	createdMerchant, err := mh.MerchantStore.CreateMerchant(merchant)
 	if err != nil {
@@ -147,6 +156,7 @@ func (mh *MerchantHandler) HandleWithdraw(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	NotifyMerchant(w, merchant.TopicID, "withdrawal", mh.Client)
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"withdrawal": withdrawal})
 }
 
@@ -160,4 +170,100 @@ func (mh *MerchantHandler) HandleGetWithdrawals(w http.ResponseWriter, r *http.R
 	}
 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"withdrawals": withdrawals})
+}
+
+func (mh *MerchantHandler) HandleGetMerchantByID(w http.ResponseWriter, r *http.Request) {
+	merchantID := chi.URLParam(r, "id")
+	if merchantID == "" {
+		mh.Logger.Printf("ERROR: error reading merchant id in chi.URLParam, %v", merchantID)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": merchantID})
+		return
+	}
+
+	merchant, err := mh.MerchantStore.GetMerchantByID(merchantID)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error getting merchant by id at GetMerchantByID, %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"merchant": merchant})
+}
+
+func (mh *MerchantHandler) generateTopicID(w http.ResponseWriter, merchant *store.Merchant) string {
+	transaction := hiero.NewTopicCreateTransaction().
+	SetTopicMemo(merchant.Username)
+	txResponse, err := transaction.Execute(mh.Client)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error executing topic create transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		panic(err)
+	}
+	receipt, err := txResponse.GetReceipt(mh.Client)
+	if err != nil {
+		mh.Logger.Printf("ERROR: error getting receipt response for topic create transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		panic(err)
+	}
+
+	topicID := *receipt.TopicID
+
+	fmt.Println("\nNotification topic created:", topicID.String())
+	return topicID.String()
+}
+
+func NotifyMerchant(w http.ResponseWriter, topicID string, messageType string, client *hiero.Client) {
+	var messageContent string
+	switch messageType {
+	case "transaction":
+		messageContent = "Payment received"
+	case "withdrawal":
+		messageContent = "Withdrawal completed"
+	case "shop_created":
+		messageContent = "Shop created"
+	case "campaign_created":
+		messageContent = "Campaign created"
+	case "joined_campaign":
+		messageContent = "A user joined your campaign"
+	default:
+		messageContent = "Unknown message type"
+	}
+
+	topicIDObj, err := hiero.TopicIDFromString(topicID)
+	if err != nil {
+		fmt.Printf("ERROR: error getting topic id: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	topicMessage := NotificationMessage{
+		Type: messageType,
+		MessageContent: messageContent,
+		Timestamp: time.Now().Unix(),
+	}
+
+	marshalledMessage, err := json.Marshal(topicMessage)
+	if err != nil {
+		fmt.Printf("ERROR: error marshalling message: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	submitMessage, err := hiero.NewTopicMessageSubmitTransaction().
+		SetMessage(marshalledMessage).
+		SetTopicID(topicIDObj).
+		Execute(client)
+	if err != nil {
+		fmt.Printf("ERROR: error freezing transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	receipt, err := submitMessage.GetReceipt(client)
+	if err != nil {
+		fmt.Printf("ERROR: error getting receipt response for topic message submit transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("Topic message submitted successfully: %v", receipt.TopicID)
 }

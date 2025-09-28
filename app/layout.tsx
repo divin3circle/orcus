@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "./QueryProvider";
+import { WalletProvider } from "@/contexts/WalletContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,8 +37,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${montserratAlternates.variable} font-montserrat-alternates bg-[#d9d9d9] antialiased`}
       >
-        <QueryProvider>{children}</QueryProvider>
-        <Toaster />
+        <AuthProvider>
+          <WalletProvider>
+            <QueryProvider>{children}</QueryProvider>
+            <Toaster />
+          </WalletProvider>
+        </AuthProvider>
       </body>
     </html>
   );

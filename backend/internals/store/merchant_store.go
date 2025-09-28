@@ -45,12 +45,13 @@ func (p *password) String() string {
 type Merchant struct {
 	ID                    string    `json:"id"`
 	Username              string    `json:"username"`
+	TopicID               string    `json:"topic_id"`
 	MobileNumber          string    `json:"mobile_number"`
 	PasswordHash          password  `json:"-"`
 	AccountID             string    `json:"account_id"`
 	ProfileImageUrl       string    `json:"profile_image_url"`
 	AccountBannerImageUrl string    `json:"account_banner_image_url"`
-	AutoOfframp           bool      `json:"auto_offramp"`
+	AutoOfframp           sql.NullBool `json:"auto_offramp"`
 	CreatedAt             time.Time `json:"created_at"`
 	UpdatedAt             time.Time `json:"updated_at"`
 	DeletedAt             time.Time `json:"deleted_at"`
@@ -94,12 +95,12 @@ type MerchantStore interface {
 
 func (pg *PostgresMerchantStore) CreateMerchant(merchant *Merchant) (*Merchant, error) {
 	query := `
-	INSERT INTO merchants (username, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	INSERT INTO merchants (username, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url, topic_id)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id, created_at, updated_at;
 	`
 
-	err := pg.db.QueryRow(query, merchant.Username, merchant.MobileNumber, merchant.PasswordHash.hash, merchant.AccountID, merchant.ProfileImageUrl, merchant.AccountBannerImageUrl).Scan(&merchant.ID, &merchant.CreatedAt, &merchant.UpdatedAt)
+	err := pg.db.QueryRow(query, merchant.Username, merchant.MobileNumber, merchant.PasswordHash.hash, merchant.AccountID, merchant.ProfileImageUrl, merchant.AccountBannerImageUrl, merchant.TopicID).Scan(&merchant.ID, &merchant.CreatedAt, &merchant.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +113,11 @@ func (pg *PostgresMerchantStore) GetMerchantByUsername(username string) (*Mercha
 	}
 
 	query := `
-	SELECT id, username, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url, created_at, updated_at
+	SELECT id, username, topic_id, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url, auto_offramp, created_at, updated_at
     FROM merchants WHERE username = $1
 	`
 
-	err := pg.db.QueryRow(query, username).Scan(&merchant.ID, &merchant.Username, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.CreatedAt, &merchant.UpdatedAt)
+	err := pg.db.QueryRow(query, username).Scan(&merchant.ID, &merchant.Username, &merchant.TopicID, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.AutoOfframp, &merchant.CreatedAt, &merchant.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -145,7 +146,7 @@ func (pg *PostgresMerchantStore) UpdateMerchant(merchant *Merchant) error {
 	RETURNING updated_at
     `
 
-	result, err := tx.Exec(query, merchant.Username, merchant.MobileNumber, merchant.PasswordHash.hash, merchant.ProfileImageUrl, merchant.AccountBannerImageUrl, merchant.AutoOfframp, merchant.ID)
+	result, err := tx.Exec(query, merchant.Username, merchant.MobileNumber, merchant.PasswordHash.hash, merchant.ProfileImageUrl, merchant.AccountBannerImageUrl, merchant.AutoOfframp.Bool, merchant.ID)
 	if err != nil {
 		return err
 	}
@@ -170,7 +171,7 @@ func (pg *PostgresMerchantStore) GetMerchantToken(scope, tokenPlainText string) 
 	tokenHash := sha256.Sum256([]byte(tokenPlainText))
 
 	query := `
-	SELECT merchants.id, merchants.username, merchants.mobile_number, merchants.password_hash, merchants.account_id, merchants.profile_image_url, merchants.account_banner_image_url, merchants.created_at, merchants.updated_at
+	SELECT merchants.id, merchants.username, merchants.topic_id, merchants.mobile_number, merchants.password_hash, merchants.account_id, merchants.profile_image_url, merchants.account_banner_image_url, merchants.auto_offramp, merchants.created_at, merchants.updated_at
 	FROM merchants
 	INNER JOIN tokens ON merchants.id = tokens.merchant_id
 	WHERE tokens.hash = $1 AND tokens.scope = $2 AND tokens.expiry > $3
@@ -180,7 +181,7 @@ func (pg *PostgresMerchantStore) GetMerchantToken(scope, tokenPlainText string) 
 		PasswordHash: password{},
 	}
 
-	err := pg.db.QueryRow(query, tokenHash[:], scope, time.Now()).Scan(&merchant.ID, &merchant.Username, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.CreatedAt, &merchant.UpdatedAt)
+	err := pg.db.QueryRow(query, tokenHash[:], scope, time.Now()).Scan(&merchant.ID, &merchant.Username, &merchant.TopicID, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.AutoOfframp, &merchant.CreatedAt, &merchant.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -236,12 +237,12 @@ func (pg *PostgresMerchantStore) GetMerchantByID(id string) (*Merchant, error) {
 		PasswordHash: password{},
 	}
 	query := `
-	SELECT id, username, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url, created_at, updated_at
+	SELECT id, username, topic_id, mobile_number, password_hash, account_id, profile_image_url, account_banner_image_url, auto_offramp, created_at, updated_at
 	FROM merchants 
 	WHERE id = $1
 	`
 
-	err := pg.db.QueryRow(query, id).Scan(&merchant.ID, &merchant.Username, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.CreatedAt, &merchant.UpdatedAt)
+	err := pg.db.QueryRow(query, id).Scan(&merchant.ID, &merchant.Username, &merchant.TopicID, &merchant.MobileNumber, &merchant.PasswordHash.hash, &merchant.AccountID, &merchant.ProfileImageUrl, &merchant.AccountBannerImageUrl, &merchant.AutoOfframp, &merchant.CreatedAt, &merchant.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

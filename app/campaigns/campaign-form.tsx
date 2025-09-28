@@ -9,7 +9,7 @@ import {
   ChevronRight,
   Target,
   ImageIcon,
-  Upload,
+  CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockShops } from "@/mocks";
+import { useMyShops } from "@/hooks/useMyShops";
+import { useCreateCampaign } from "@/hooks/useCampaigns";
+import { useRouter } from "next/navigation";
+import { IconChecks, IconRosetteDiscountCheck } from "@tabler/icons-react";
 
 const campaignSchema = z.object({
   shop_id: z.string().min(1, "Please select a shop"),
@@ -54,6 +57,7 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
     watch,
   } = form;
   const selectedShop = watch("shop_id");
+  const { data: shops } = useMyShops();
 
   return (
     <div className="space-y-6">
@@ -71,11 +75,11 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
         <div className="space-y-2">
           <Label htmlFor="shop_id">Select Shop</Label>
           <Select onValueChange={(value) => setValue("shop_id", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a shop for your campaign" />
+            <SelectTrigger className="shadow-none border-foreground/30 border-[1px] w-full md:w-1/2">
+              <SelectValue placeholder="Select a shop" />
             </SelectTrigger>
-            <SelectContent>
-              {mockShops.map((shop) => (
+            <SelectContent className="shadow-none border-foreground/10 border-[1px]">
+              {shops?.map((shop) => (
                 <SelectItem key={shop.id} value={shop.id}>
                   <div className="flex items-center gap-2">
                     <img
@@ -100,7 +104,10 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
             id="name"
             placeholder="e.g., Summer Sale 2024"
             {...register("name")}
-            className={cn(errors.name && "border-destructive")}
+            className={cn(
+              errors.name && "border-destructive",
+              "shadow-none border-foreground/30 border-[1px]"
+            )}
           />
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -114,7 +121,10 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
             placeholder="Describe your campaign goals and what customers can expect..."
             rows={4}
             {...register("description")}
-            className={cn(errors.description && "border-destructive")}
+            className={cn(
+              errors.description && "border-destructive",
+              "shadow-none border-foreground/30 border-[1px]"
+            )}
           />
           {errors.description && (
             <p className="text-sm text-destructive">
@@ -130,7 +140,10 @@ function Step1({ form, onNext }: { form: any; onNext: () => void }) {
             type="number"
             placeholder="10000"
             {...register("target_tokens", { valueAsNumber: true })}
-            className={cn(errors.target_tokens && "border-destructive")}
+            className={cn(
+              errors.target_tokens && "border-destructive",
+              "shadow-none border-foreground/30 border-[1px]"
+            )}
           />
           {errors.target_tokens && (
             <p className="text-sm text-destructive">
@@ -159,10 +172,12 @@ function Step2({
   form,
   onBack,
   onSubmit,
+  createCampaignMutation,
 }: {
   form: any;
   onBack: () => void;
   onSubmit: (data: CampaignFormData) => void;
+  createCampaignMutation: any;
 }) {
   const {
     register,
@@ -195,7 +210,10 @@ function Step2({
               type="url"
               placeholder="https://example.com/icon.png"
               {...register("icon")}
-              className={cn(errors.icon && "border-destructive")}
+              className={cn(
+                errors.icon && "border-destructive",
+                "shadow-none border-foreground/30 border-[1px]"
+              )}
             />
           ) : (
             <div className="space-y-2">
@@ -238,7 +256,10 @@ function Step2({
               type="url"
               placeholder="https://example.com/banner.png"
               {...register("banner_image_url")}
-              className={cn(errors.banner_image_url && "border-destructive")}
+              className={cn(
+                errors.banner_image_url && "border-destructive",
+                "shadow-none border-foreground/30 border-[1px]"
+              )}
             />
           ) : (
             <div className="space-y-2">
@@ -289,8 +310,9 @@ function Step2({
         <Button
           onClick={handleSubmit(onSubmit)}
           className="flex-1 bg-foreground text-background hover:bg-foreground/90"
+          disabled={createCampaignMutation.isPending}
         >
-          Create Campaign
+          {createCampaignMutation.isPending ? "Creating..." : "Create Campaign"}
         </Button>
       </div>
     </div>
@@ -302,6 +324,9 @@ export function CampaignForm({
   ...props
 }: React.ComponentProps<"div">) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [createdCampaign, setCreatedCampaign] = useState<any>(null);
+  const router = useRouter();
+  const createCampaignMutation = useCreateCampaign();
 
   const form = useForm<CampaignFormData>({
     resolver: zodResolver(campaignSchema),
@@ -324,48 +349,155 @@ export function CampaignForm({
   };
 
   const handleSubmit = (data: CampaignFormData) => {
-    console.log("Campaign data:", data);
-    // Here you would typically send the data to your API
-    alert("Campaign created successfully!");
+    const campaignData = {
+      name: data.name,
+      token_id: "0.0.6918376", // You can make this configurable later
+      description: data.description,
+      target: data.target_tokens,
+      distributed: 0,
+      ended: 0,
+      icon: data.icon || "",
+      banner_image_url: data.banner_image_url || "",
+    };
+
+    createCampaignMutation.mutate(
+      {
+        shopId: data.shop_id,
+        campaignData,
+      },
+      {
+        onSuccess: (response) => {
+          setCreatedCampaign(response);
+          setCurrentStep(3); // Move to success step
+        },
+      }
+    );
   };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <div className="flex justify-center mb-4">
-        <div className="flex items-center space-x-2">
-          <div
-            className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-              currentStep >= 1
-                ? "bg-foreground text-background"
-                : "bg-muted text-muted-foreground"
-            )}
-          >
-            1
-          </div>
-          <div
-            className={cn(
-              "w-16 h-1 rounded",
-              currentStep >= 2 ? "bg-foreground" : "bg-muted"
-            )}
-          />
-          <div
-            className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-              currentStep >= 2
-                ? "bg-foreground text-background"
-                : "bg-muted text-muted-foreground"
-            )}
-          >
-            2
+      {currentStep < 3 && (
+        <div className="flex justify-center mb-4">
+          <div className="flex items-center space-x-2">
+            <div
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                currentStep >= 1
+                  ? "bg-foreground text-background"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              1
+            </div>
+            <div
+              className={cn(
+                "w-16 h-1 rounded",
+                currentStep >= 2 ? "bg-foreground" : "bg-muted"
+              )}
+            />
+            <div
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                currentStep >= 2
+                  ? "bg-foreground text-background"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              2
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {currentStep === 1 && <Step1 form={form} onNext={handleNext} />}
       {currentStep === 2 && (
-        <Step2 form={form} onBack={handleBack} onSubmit={handleSubmit} />
+        <Step2
+          form={form}
+          onBack={handleBack}
+          onSubmit={handleSubmit}
+          createCampaignMutation={createCampaignMutation}
+        />
       )}
+      {currentStep === 3 && <Success createdCampaign={createdCampaign} />}
+    </div>
+  );
+}
+
+function Success({ createdCampaign }: { createdCampaign: any }) {
+  const router = useRouter();
+  const campaignId = createdCampaign?.response?.shop?.campaigns?.[0]?.id;
+  const transactionResponse = createdCampaign?.response?.transaction_response;
+
+  const handleViewCampaign = () => {
+    if (campaignId) {
+      router.back();
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-center">
+        <IconRosetteDiscountCheck className="w-20 h-20 text-green-500" />
+      </div>
+      <div className="text-center space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">
+            Campaign Created Successfully!
+          </h1>
+          <p className="text-muted-foreground">
+            Your campaign has been created and is now active on the Hedera
+            network.
+          </p>
+        </div>
+      </div>
+
+      {transactionResponse && (
+        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold">Hedera Transaction Details</h3>
+          </div>
+
+          <div className="space-y-2 text-sm bg-foreground/5 p-4 rounded-xl">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Transaction ID:</span>
+              <span className="text-xs">
+                {transactionResponse.transactionID}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Node ID:</span>
+              <span className="text-xs">{transactionResponse.nodeID}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Hash:</span>
+              <span className="text-xs truncate max-w-[200px]">
+                {transactionResponse.hash}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <Button
+          onClick={() => {
+            window.open(
+              `https://hashscan.io/testnet/transaction/${transactionResponse.transactionID}`,
+              "_blank"
+            );
+          }}
+          variant="outline"
+          className="flex-1 bg-transparent border-foreground/30 border-[1px] hover:bg-foreground/5"
+        >
+          View Transaction
+        </Button>
+        <Button
+          onClick={handleViewCampaign}
+          className="flex-1 bg-foreground text-background hover:bg-foreground/90"
+        >
+          View Campaign
+        </Button>
+      </div>
     </div>
   );
 }

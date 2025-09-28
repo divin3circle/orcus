@@ -29,6 +29,13 @@ type Purchase struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type UserCampaignEntry struct {
+	ID string `json:"id"`
+	ShopID string `json:"shop_id"`
+	CampaignID string `json:"campaign_id"`
+	TokenBalance int64 `json:"token_balance"`
+}
+
 var AnonymousUser = &User{}
 
 func (u User) IsAnonymous() bool {
@@ -50,6 +57,10 @@ type UserStore interface {
 	GetUserToken(scope, tokenPlainText string) (*User, error)
 	BuyToken(userID string, amount int64) error
 	GetUserPurchases(userID string) ([]*Purchase, error)
+	JoinCampaign(userID string, campaignID string, tokenBalance int64) error
+	UpdateCampaignEntry(userID string, campaignID string, tokenBalance int64) error
+	IsParticipant(userID string, campaignID string) (bool, error)
+	GetUserCampaigns(userID string) ([]*UserCampaignEntry, error)
 }
 
 func (pu *PostgresUserStore) CreateUser(user *User) (*User, error) {
@@ -160,4 +171,82 @@ func (pu *PostgresUserStore) GetUserPurchases(userID string) ([]*Purchase, error
 		purchases = append(purchases, &purchase)
 	}
 	return purchases, nil
+}
+
+func (pu *PostgresUserStore) JoinCampaign(userID string, campaignID string, tokenBalance int64) error {
+	isParticipant, err := pu.IsParticipant(userID, campaignID)
+	if err != nil {
+		return err
+	}
+	
+	if isParticipant {
+		return errors.New("user is already participating in this campaign")
+	}
+	query := `
+	INSERT INTO campaigns_entry (user_id, campaign_id, token_balance)
+	VALUES ($1, $2, $3)
+	`
+	_, err = pu.db.Exec(query, userID, campaignID, tokenBalance)
+	return err
+}
+
+func (pg *PostgresUserStore) UpdateCampaignEntry(userID string, campaignID string, tokenIncrement int64) error {
+    query := `
+        UPDATE campaigns_entry 
+        SET token_balance = token_balance + $1 
+        WHERE user_id = $2 AND campaign_id = $3
+    `
+    
+    result, err := pg.db.Exec(query, tokenIncrement, userID, campaignID)
+    if err != nil {
+        return err
+    }
+    
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return err
+    }
+    
+    if rowsAffected == 0 {
+        return errors.New("no campaign entry found for user")
+    }
+    
+    return nil
+}
+
+func (pu *PostgresUserStore) IsParticipant(userID string, campaignID string) (bool, error) {
+	query := `
+	SELECT EXISTS(SELECT 1 FROM campaigns_entry WHERE user_id = $1 AND campaign_id = $2)
+	`
+	var exists bool
+	err := pu.db.QueryRow(query, userID, campaignID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*UserCampaignEntry, error) {
+	query := `
+	SELECT id, shop_id, campaign_id, token_balance
+	FROM campaigns_entry
+	WHERE user_id = $1
+	`
+	campaigns, err := pu.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer campaigns.Close()
+
+	result := []*UserCampaignEntry{}
+	for campaigns.Next() {
+		var campaign UserCampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.ShopID, &campaign.CampaignID, &campaign.TokenBalance)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &campaign)
+	}
+
+	return result, nil
 }

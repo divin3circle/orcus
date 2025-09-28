@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -9,26 +10,47 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { formatBalance, useKESTBalance } from "@/hooks/useBalances";
 
 function Withdraw() {
+  const { data: kshBalance } = useKESTBalance();
+  const [amount, setAmount] = useState(0);
+  const [mobile, setMobile] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+
+  const handleWithdraw = () => {
+    console.log(amount, mobile, mobileNumber);
+  };
+
+  const calculateWithdrawalLimit = () => {
+    return kshBalance ? kshBalance * 0.9 : 0;
+  };
+
+  const calculateWithdrawalAmount = (index: number) => {
+    return (((index + 1) * 25) / 10000) * calculateWithdrawalLimit();
+  };
+
   return (
     <div className="border border-foreground/30 rounded-xl p-2 h-auto xl:h-[45%]">
       <h1 className="text-base font-semibold mt-2">Withdraw</h1>
       <div className="flex items-center justify-between mt-2">
         <p className="text-sm text-foreground/80">Withdrawal Limit</p>
-        <p className="text-sm text-foreground/80">KES 10,000</p>
+        <p className="text-sm text-foreground/80">
+          KES {formatBalance(calculateWithdrawalLimit())}
+        </p>
       </div>
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex items-center justify-between mt-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md size-20"
+            onClick={() => setAmount(calculateWithdrawalAmount(index))}
+            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md size-[78px]"
           >
             {(index + 1) * 25}%
           </div>
         ))}
       </div>
-      <Tabs defaultValue="wallet" className="w-full mt-4">
+      <Tabs defaultValue="wallet" className="w-full mt-8">
         <TabsList className="w-full">
           <TabsTrigger
             value="wallet"
@@ -75,7 +97,7 @@ function Withdraw() {
           </div>
         </TabsContent>
         <TabsContent value="fiat" className="flex flex-col gap-2">
-          <Select>
+          <Select value={mobile} onValueChange={(value) => setMobile(value)}>
             <SelectTrigger className="border-foreground/30 mt-2 shadow-none border-[1px] placeholder:text-foreground/50 w-full">
               <SelectValue placeholder="Choose a bank" />
             </SelectTrigger>
@@ -87,6 +109,8 @@ function Withdraw() {
           </Select>
           <Input
             placeholder="Enter phone or account number"
+            value={mobileNumber}
+            onChange={(e) => setMobileNumber(e.target.value)}
             className="border-foreground/30 mt-2 border-[1px] placeholder:text-foreground/50"
           />
           <div className="flex items-center justify-between mt-2 gap-2">
@@ -96,10 +120,13 @@ function Withdraw() {
               min={0}
               max={10000}
               className="border-foreground/30 border-[1px] placeholder:text-foreground/50"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
             />
             <Button
               variant="outline"
               className="border-foreground/30 border-[1px] bg-foreground text-background hover:bg-foreground/80"
+              onClick={handleWithdraw}
             >
               Withdraw
             </Button>

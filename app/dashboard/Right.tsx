@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import Campaigns from "./Campaigns";
 import Withdraw from "./Withdraw";

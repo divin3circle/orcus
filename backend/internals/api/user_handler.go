@@ -27,6 +27,12 @@ type UserBuyTokenRequest struct {
 	UserID string `json:"user_id"`
 }
 
+type UserCampaignRequest struct {
+	CampaignID string `json:"campaign_id"`
+	UserID string `json:"user_id"`
+	TokenBalance int64 `json:"token_balance"`
+}
+
 type UserHandler struct {
 	UserStore store.UserStore
 	Logger    *log.Logger
@@ -187,6 +193,83 @@ func (uh *UserHandler) HandleGetUserPurchases(w http.ResponseWriter, r *http.Req
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"purchases": purchases})
+}
+
+func (uh *UserHandler) HandleGetUserCampaigns(w http.ResponseWriter, r *http.Request) {
+	userID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		uh.Logger.Printf("ERROR: error reading user id in ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	campaigns, err := uh.UserStore.GetUserCampaigns(userID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting user campaigns in GetUserCampaigns: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
+}
+
+func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request) {
+	var req UserCampaignRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error decoding user join campaign request body at Decode: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	err = uh.UserStore.JoinCampaign(req.UserID, req.CampaignID, req.TokenBalance)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error joining campaign in JoinCampaign: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	NotifyMerchant(w, req.CampaignID, "joined_campaign", uh.Client)
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign joined successfully"})
+}
+
+func (uh *UserHandler) HandleIsParticipant(w http.ResponseWriter, r *http.Request) {
+	var req UserCampaignRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error decoding user is participant request body at Decode: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	isParticipant, err := uh.UserStore.IsParticipant(req.UserID, req.CampaignID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error checking if user is participant in IsParticipant: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"is_participant": isParticipant})
+}
+
+func (uh *UserHandler) HandleUpdateCampaignEntry(w http.ResponseWriter, r *http.Request) {
+	var req UserCampaignRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error decoding user update campaign entry request body at Decode: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	err = uh.UserStore.UpdateCampaignEntry(req.UserID, req.CampaignID, req.TokenBalance)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error updating campaign entry in UpdateCampaignEntry: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign entry updated successfully"})
 }
 
 func (uh *UserHandler) validateRegisterRequest(registerRequest *UserRegisterRequest) error {

@@ -45,11 +45,16 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Post("/withdraw", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleWithdraw))
 
 		r.Get("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopByID))
+		r.Get("/merchants-id/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetMerchantByID))
 		r.Get("/merchants/{username}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetMerchantByUsername))
 		r.Get("/withdrawals", orcus.Middleware.RequireAuthenticatedMerchant(orcus.MerchantHandler.HandleGetWithdrawals))
 		r.Get("/transactions/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionByID))
 		r.Get("/transactions/shop/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionsByShopID))
 		r.Get("/transactions/merchant/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionsByMerchantID))
+		r.Get("/my-campaigns/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopCampaigns))
+		r.Get("/shops/merchant/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopsByMerchantID))
+		r.Get("/shops/campaigns/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopCampaignsByShopID))
+		r.Get("/shops/campaigns/entries/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetUserCampaignsEntryByShopID))
 
 		r.Put("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerUpdateShop))
 
@@ -62,7 +67,11 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Get("/transactions/user/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleGetTransactionsByUserID))
 		r.Get("/transactions/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleGetTransactionByID))
 		r.Get("/purchases/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserPurchases))
+		r.Get("/campaigns/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserCampaigns))
+		r.Post("/campaigns", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleJoinCampaign))
 
+		r.Post("/campaigns/is-participant", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleIsParticipant))
+		r.Post("/campaigns/update", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleUpdateCampaignEntry))
 		r.Post("/transactions", orcus.Middleware.RequireAuthenticatedUser(orcus.TransactionHandler.HandleCreateTransaction))
 		r.Post("/purchases", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleBuyToken))
 	})

@@ -6,19 +6,23 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/divin3circle/orcus/backend/internals/middleware"
 	"github.com/divin3circle/orcus/backend/internals/store"
 	"github.com/divin3circle/orcus/backend/internals/utils"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 type ShopHandler struct{
 	ShopStore store.ShopStore
 	Logger *log.Logger
+	Client *hiero.Client
 }
 
-func NewShopHandler(shopStore store.ShopStore, logger *log.Logger) *ShopHandler {
-	return &ShopHandler{ShopStore: shopStore, Logger: logger}
+func NewShopHandler(shopStore store.ShopStore, logger *log.Logger, client *hiero.Client) *ShopHandler {
+	return &ShopHandler{ShopStore: shopStore, Logger: logger, Client: client}
 }
 
 func (sh *ShopHandler) HandlerGetShopByID(w http.ResponseWriter, r *http.Request) {
@@ -68,10 +72,26 @@ func (sh *ShopHandler) HandlerCreateShop(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	NotifyMerchant(w, cm.TopicID, "shop_created", sh.Client)
+
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": createdShop})
 }
 
 func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request) {
+	operatorId, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ACCOUNT_ID"))
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting operator id OperatorAccountIDFromString: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+
+	}
+	privateKey, err := hiero.PrivateKeyFromStringEd25519(os.Getenv("OPERATOR_KEY"))
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting operator key PrivateKeyFromStringEd25519: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
 	shopID, err := utils.ReadIDParam(r, "id")
 	if err != nil {
 		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
@@ -98,6 +118,11 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 		Campaigns []store.CampaignEntry `json:"campaigns"`
 	}
 
+	var updateShopResponse struct {
+		Shop *store.Shop `json:"shop"`
+		TransactionResponse hiero.TransactionResponse `json:"transaction_response"`
+	}
+
 	err = json.NewDecoder(r.Body).Decode(&updateShopRequest)
 	if err != nil {
 		sh.Logger.Printf("ERROR: error decoding update shop request Decode: %v", err)
@@ -113,8 +138,35 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 		existingShop.ProfileImageUrl = *updateShopRequest.ProfileImageUrl
 	}
 
-	if updateShopRequest.Campaigns != nil {
-		existingShop.Campaigns = updateShopRequest.Campaigns
+	if len(updateShopRequest.Campaigns) > 0 {
+		for i := range updateShopRequest.Campaigns {
+			campaignCreationRequest := &updateShopRequest.Campaigns[i]
+			tokenSymbol := generateTokenSymbol(campaignCreationRequest.Name)
+
+			transaction, _ := hiero.NewTokenCreateTransaction().
+				SetTokenName(campaignCreationRequest.Name).
+				SetTokenSymbol(tokenSymbol).
+				SetDecimals(2).
+				SetInitialSupply(uint64(campaignCreationRequest.Target)).
+				SetSupplyType(hiero.TokenSupplyTypeFinite).
+				SetMaxSupply(campaignCreationRequest.Target).
+				SetTreasuryAccountID(operatorId).
+				SetAdminKey(privateKey.PublicKey()).
+				SetSupplyKey(privateKey.PublicKey()).
+				SetTokenMemo(campaignCreationRequest.Description).
+				FreezeWith(sh.Client)
+
+			signedTx := transaction.Sign(privateKey)
+			txResponse, _ := signedTx.Execute(sh.Client)
+			receipt, _ := txResponse.GetReceipt(sh.Client)
+			updateShopResponse.TransactionResponse = txResponse
+			tokenId := *receipt.TokenID
+
+			sh.Logger.Printf("Token created: %s\n", tokenId.String())
+			campaignCreationRequest.TokenID = tokenId.String()
+		}
+
+		existingShop.Campaigns = append(existingShop.Campaigns, updateShopRequest.Campaigns...)
 	}
 
 	cm := middleware.GetMerchant(r)
@@ -149,6 +201,103 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+	updateShopResponse.Shop = existingShop
 
-	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": existingShop})
+	NotifyMerchant(w, cm.TopicID, "campaign_created", sh.Client)
+
+	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"response": updateShopResponse})
+}
+
+func (sh *ShopHandler) HandlerGetShopCampaigns(w http.ResponseWriter, r *http.Request) {
+	shopID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	campaigns, err := sh.ShopStore.GetShopCampaigns(shopID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop campaigns GetShopCampaigns: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
+}
+
+func (sh *ShopHandler) HandlerGetShopsByMerchantID(w http.ResponseWriter, r *http.Request) {
+	merchantID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting merchant by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	shops, err := sh.ShopStore.GetShopsByMerchantID(merchantID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shops by merchant id GetShopsByMerchantID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shops": shops})
+}
+
+func (sh *ShopHandler) HandlerGetUserCampaignsEntryByShopID(w http.ResponseWriter, r *http.Request) {
+	shopID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+
+	campaigns, err := sh.ShopStore.GetUserCampaignEntryByShopID(shopID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting user campaigns by shop id GetUserCampaignEntryByShopID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
+}
+
+func (sh *ShopHandler) HandlerGetShopCampaignsByShopID(w http.ResponseWriter, r *http.Request) {
+	shopID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	campaigns, err := sh.ShopStore.GetShopCampaignsByShopID(shopID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop campaigns by shop id GetShopCampaignsByShopID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
+}
+
+func generateTokenSymbol(name string) string {
+	if name == "" {
+		return "TKN"
+	}
+	
+	names := strings.Split(name, " ")
+	symbol := ""
+	for _, namePart := range names {
+		if len(namePart) > 0 {
+			symbol += strings.ToUpper(namePart[:1])
+		}
+	}
+	
+	if len(symbol) < 3 {
+		symbol += "TKN"
+	}
+	
+	if len(symbol) > 5 {
+		symbol = symbol[:5]
+	}
+	
+	return symbol
 }
