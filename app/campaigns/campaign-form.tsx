@@ -9,8 +9,6 @@ import {
   ChevronRight,
   Target,
   ImageIcon,
-  Upload,
-  ExternalLink,
   CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,9 +25,8 @@ import {
 } from "@/components/ui/select";
 import { useMyShops } from "@/hooks/useMyShops";
 import { useCreateCampaign } from "@/hooks/useCampaigns";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import MyLottieComponent from "@/components/ui/lottie-success";
+import { IconChecks, IconRosetteDiscountCheck } from "@tabler/icons-react";
 
 const campaignSchema = z.object({
   shop_id: z.string().min(1, "Please select a shop"),
@@ -439,6 +436,9 @@ function Success({ createdCampaign }: { createdCampaign: any }) {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-center">
+        <IconRosetteDiscountCheck className="w-20 h-20 text-green-500" />
+      </div>
       <div className="text-center space-y-4">
         <div>
           <h1 className="text-2xl font-bold mb-2">
@@ -454,51 +454,42 @@ function Success({ createdCampaign }: { createdCampaign: any }) {
       {transactionResponse && (
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
             <h3 className="font-semibold">Hedera Transaction Details</h3>
           </div>
 
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 text-sm bg-foreground/5 p-4 rounded-xl">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Transaction ID:</span>
-              <span className="font-mono text-xs">
+              <span className="text-xs">
                 {transactionResponse.transactionID}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Node ID:</span>
-              <span className="font-mono text-xs">
-                {transactionResponse.nodeID}
-              </span>
+              <span className="text-xs">{transactionResponse.nodeID}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Hash:</span>
-              <span className="font-mono text-xs truncate max-w-[200px]">
+              <span className="text-xs truncate max-w-[200px]">
                 {transactionResponse.hash}
               </span>
             </div>
-          </div>
-
-          <div className="pt-2">
-            <a
-              href={`https://hashscan.io/testnet/transaction/${transactionResponse.transactionID}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
-            >
-              View on HashScan <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
         </div>
       )}
 
       <div className="flex gap-3">
         <Button
-          onClick={() => router.push("/dashboard")}
+          onClick={() => {
+            window.open(
+              `https://hashscan.io/testnet/transaction/${transactionResponse.transactionID}`,
+              "_blank"
+            );
+          }}
           variant="outline"
           className="flex-1 bg-transparent border-foreground/30 border-[1px] hover:bg-foreground/5"
         >
-          Back to Dashboard
+          View Transaction
         </Button>
         <Button
           onClick={handleViewCampaign}

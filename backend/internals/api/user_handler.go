@@ -229,6 +229,8 @@ func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	NotifyMerchant(w, req.CampaignID, "joined_campaign", uh.Client)
+
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign joined successfully"})
 }
 

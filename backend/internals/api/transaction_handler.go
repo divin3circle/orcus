@@ -170,7 +170,8 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		HederaTransaction: transactionResponse1,
 	}
 
-	// return the transaction id
+	NotifyMerchant(w, merchant.TopicID, "transaction", th.Client)
+
 	utils.WriteJSON(w, http.StatusCreated, utils.Envelope{"data": successfulTxn})
 }
 

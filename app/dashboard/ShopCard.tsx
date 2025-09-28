@@ -1,3 +1,5 @@
+"use client";
+
 import { MyShop } from "@/hooks/useMyShops";
 import React from "react";
 import cardRedImage from "@/public/card-red.png";

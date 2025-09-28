@@ -264,7 +264,7 @@ func (pg *PostgresShopStore) GetShopsByMerchantID(merchantID string) ([]*Shop, e
 
 	for _, shop := range shops {
 		campaignsQuery := `
-		SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url
+		SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url, shop_id
 		FROM campaigns
 		WHERE shop_id = $1
 		`
@@ -286,6 +286,7 @@ func (pg *PostgresShopStore) GetShopsByMerchantID(merchantID string) ([]*Shop, e
 				&campaign.Ended,
 				&campaign.Icon,
 				&campaign.BannerImageUrl,
+				&campaign.ShopID,
 			)
 			if err != nil {
 				campaignRows.Close()

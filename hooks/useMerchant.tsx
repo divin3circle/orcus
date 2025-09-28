@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 export interface Merchant {
   id: string;
   username: string;
+  topic_id: string;
   mobile_number: string;
   account_id: string;
   profile_image_url: string;

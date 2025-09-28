@@ -105,9 +105,11 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                 </DrawerTitle>
                 <DrawerDescription className="md:w-[500px] w-full mx-auto my-0 flex flex-col gap-2 items-center justify-center">
                   <div className="flex flex-col gap-2 max-w-md mx-auto">
-                    <div className="rounded-full size-20 bg-foreground flex items-center justify-center">
-                      <ChevronsUp className="size-6 text-lime-500" />
-                    </div>
+                    <img
+                      src={campaign.banner_image_url}
+                      alt={campaign.name}
+                      className=" size-28 object-cover rounded-full"
+                    />
                   </div>
                   <p className="text-sm text-foreground/80">
                     Campaign Progress

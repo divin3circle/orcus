@@ -16,10 +16,10 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import NotificationCard from "./NotificationCard";
-import { mockNotifications } from "@/mocks";
 import { useMerchant } from "@/hooks/useMerchant";
 import { Loader2, LogOut, Wallet } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
+import { useNotifications } from "@/hooks/useNotifications";
 
 function DashboardHeader() {
   const { data: merchant, isLoading, error } = useMerchant();
@@ -29,6 +29,11 @@ function DashboardHeader() {
     isLoading: isWalletLoading,
     disconnect,
   } = useWallet();
+  const {
+    data: notifications,
+    isLoading: isNotificationsLoading,
+    error: notificationsError,
+  } = useNotifications();
 
   if (isLoading) {
     return (
@@ -81,19 +86,27 @@ function DashboardHeader() {
               <DrawerDescription>
                 Get notified about new campaigns and payments.
               </DrawerDescription>
-              <div className="flex flex-col gap-2 mt-4 md:w-[500px] w-full mx-auto my-0">
-                {mockNotifications.slice(0, 5).map((notification) => (
-                  <NotificationCard
-                    key={notification.id}
-                    notification={notification}
-                  />
-                ))}
-                {mockNotifications.length > 5 && (
-                  <p className="text-sm text-foreground/80">
-                    +{mockNotifications.length - 5} More
-                  </p>
-                )}
-              </div>
+              {isNotificationsLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-5 h-5 mt-8 animate-spin" />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 mt-4 md:w-[500px] w-full mx-auto my-0">
+                  {notifications?.slice(0, 5).map((notification) => (
+                    <NotificationCard
+                      key={notification.timestamp}
+                      notification={notification}
+                    />
+                  ))}
+                  {notifications &&
+                    notifications?.length &&
+                    notifications?.length > 5 && (
+                      <p className="text-sm text-foreground/80">
+                        +{notifications?.length - 5} More
+                      </p>
+                    )}
+                </div>
+              )}
             </DrawerHeader>
             <DrawerFooter className="md:w-[500px] w-full mx-auto my-0">
               <DrawerClose>
@@ -101,7 +114,7 @@ function DashboardHeader() {
                   variant="outline"
                   className="bg-foreground text-background hover:text-background hover:bg-foreground/90 w-full"
                 >
-                  Cancel
+                  Close
                 </Button>
               </DrawerClose>
             </DrawerFooter>

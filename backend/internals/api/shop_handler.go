@@ -72,6 +72,8 @@ func (sh *ShopHandler) HandlerCreateShop(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	NotifyMerchant(w, cm.TopicID, "shop_created", sh.Client)
+
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shop": createdShop})
 }
 
@@ -136,35 +138,35 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 		existingShop.ProfileImageUrl = *updateShopRequest.ProfileImageUrl
 	}
 
-	if updateShopRequest.Campaigns != nil {
-		// create an hts token for each campaign with the target as the max cap
-		 campaignCreationRequest := &updateShopRequest.Campaigns[0]
-		 tokenSymbol := generateTokenSymbol(campaignCreationRequest.Name)
+	if len(updateShopRequest.Campaigns) > 0 {
+		for i := range updateShopRequest.Campaigns {
+			campaignCreationRequest := &updateShopRequest.Campaigns[i]
+			tokenSymbol := generateTokenSymbol(campaignCreationRequest.Name)
 
-		transaction, _ := hiero.NewTokenCreateTransaction().
-        SetTokenName(campaignCreationRequest.Name).
-        SetTokenSymbol(tokenSymbol).
-        SetDecimals(2).
-        SetInitialSupply(uint64(campaignCreationRequest.Target)).
-        SetSupplyType(hiero.TokenSupplyTypeFinite).
-        SetMaxSupply(campaignCreationRequest.Target).
-        SetTreasuryAccountID(operatorId).
-        SetAdminKey(privateKey.PublicKey()).
-        SetSupplyKey(privateKey.PublicKey()).
-        SetTokenMemo(campaignCreationRequest.Description).
-        FreezeWith(sh.Client)
+			transaction, _ := hiero.NewTokenCreateTransaction().
+				SetTokenName(campaignCreationRequest.Name).
+				SetTokenSymbol(tokenSymbol).
+				SetDecimals(2).
+				SetInitialSupply(uint64(campaignCreationRequest.Target)).
+				SetSupplyType(hiero.TokenSupplyTypeFinite).
+				SetMaxSupply(campaignCreationRequest.Target).
+				SetTreasuryAccountID(operatorId).
+				SetAdminKey(privateKey.PublicKey()).
+				SetSupplyKey(privateKey.PublicKey()).
+				SetTokenMemo(campaignCreationRequest.Description).
+				FreezeWith(sh.Client)
 
-		signedTx := transaction.Sign(privateKey)
-		txResponse, _ := signedTx.Execute(sh.Client)
-		receipt, _ := txResponse.GetReceipt(sh.Client)
-		updateShopResponse.TransactionResponse = txResponse
-		tokenId := *receipt.TokenID
+			signedTx := transaction.Sign(privateKey)
+			txResponse, _ := signedTx.Execute(sh.Client)
+			receipt, _ := txResponse.GetReceipt(sh.Client)
+			updateShopResponse.TransactionResponse = txResponse
+			tokenId := *receipt.TokenID
 
-		sh.Logger.Printf("Token created: %s\n", tokenId.String())
-		campaignCreationRequest.TokenID = tokenId.String()
-		
+			sh.Logger.Printf("Token created: %s\n", tokenId.String())
+			campaignCreationRequest.TokenID = tokenId.String()
+		}
 
-		existingShop.Campaigns = updateShopRequest.Campaigns
+		existingShop.Campaigns = append(existingShop.Campaigns, updateShopRequest.Campaigns...)
 	}
 
 	cm := middleware.GetMerchant(r)
@@ -200,6 +202,8 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	updateShopResponse.Shop = existingShop
+
+	NotifyMerchant(w, cm.TopicID, "shop_updated", sh.Client)
 
 	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"response": updateShopResponse})
 }
@@ -275,10 +279,25 @@ func (sh *ShopHandler) HandlerGetShopCampaignsByShopID(w http.ResponseWriter, r 
 }
 
 func generateTokenSymbol(name string) string {
+	if name == "" {
+		return "TKN"
+	}
+	
 	names := strings.Split(name, " ")
 	symbol := ""
-	for _, name := range names {
-		symbol += strings.ToUpper(name[:1])
+	for _, namePart := range names {
+		if len(namePart) > 0 {
+			symbol += strings.ToUpper(namePart[:1])
+		}
 	}
+	
+	if len(symbol) < 3 {
+		symbol += "TKN"
+	}
+	
+	if len(symbol) > 5 {
+		symbol = symbol[:5]
+	}
+	
 	return symbol
 }

@@ -2,10 +2,20 @@ import { ChevronsLeft } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import ShopsHeader from "./ShopsHeader";
-import { mockShops } from "@/mocks";
+import { useMyShops } from "@/hooks/useMyShops";
 import ShopCard from "../dashboard/ShopCard";
 
 function page() {
+  const { data: shops, isLoading, error } = useMyShops();
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (error) {
+    return <div>Error: {error?.message}</div>;
+  }
+  if (shops?.length === 0 || !shops) {
+    return <div>No shops found</div>;
+  }
   return (
     <div>
       <ShopsHeader />
@@ -15,7 +25,7 @@ function page() {
           <p className="underline underline-offset-4">Back Home</p>
         </Link>
         <div className="mt-4 flex flex-wrap gap-4 flex-col md:flex-row">
-          {mockShops.map((shop) => (
+          {shops.map((shop) => (
             <ShopCard key={shop.id} shop={shop} />
           ))}
         </div>

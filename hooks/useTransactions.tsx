@@ -1,3 +1,4 @@
+"use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { authAxios } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
