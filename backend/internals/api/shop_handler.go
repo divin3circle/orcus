@@ -203,7 +203,7 @@ func (sh *ShopHandler) HandlerUpdateShop(w http.ResponseWriter, r *http.Request)
 	}
 	updateShopResponse.Shop = existingShop
 
-	NotifyMerchant(w, cm.TopicID, "shop_updated", sh.Client)
+	NotifyMerchant(w, cm.TopicID, "campaign_created", sh.Client)
 
 	_ = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"response": updateShopResponse})
 }

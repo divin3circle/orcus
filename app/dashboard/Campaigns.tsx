@@ -29,8 +29,8 @@ function Campaigns() {
       <div className="flex flex-col gap-2 mt-4">
         {shops.map((shop) =>
           shop.campaigns
-            .slice(0, 2)
-            .map((campaign) => (
+            ?.slice(0, 2)
+            ?.map((campaign) => (
               <CampaignCard key={campaign.id} campaign={campaign} />
             ))
         )}

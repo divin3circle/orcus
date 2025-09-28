@@ -83,6 +83,13 @@ function DashboardHeader() {
           <DrawerContent className="bg-[#d9d9d9]">
             <DrawerHeader>
               <DrawerTitle>Notifications</DrawerTitle>
+              <a
+                href={`https://hashscan.io/testnet/topic/${merchant.topic_id}/messages`}
+                target="_blank"
+                className="text-sm text-foreground/80 underline"
+              >
+                Your Topic ID: {merchant.topic_id}
+              </a>
               <DrawerDescription>
                 Get notified about new campaigns and payments.
               </DrawerDescription>
