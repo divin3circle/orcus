@@ -1,6 +1,6 @@
 "use client";
 import { Campaign } from "@/hooks/useCampaigns";
-import { useGetShopByID } from "@/hooks/useMyShops";
+import { useGetShopByID, useSingleShop } from "@/hooks/useMyShops";
 import React from "react";
 import Link from "next/link";
 import {
@@ -16,16 +16,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  IconCalendar,
   IconCopy,
   IconTarget,
+  IconUsers,
   IconTrophy,
   IconX,
+  IconEye,
 } from "@tabler/icons-react";
 import { ChevronsUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 function CampaignCard({ campaign }: { campaign: Campaign }) {
   const { data: shop } = useGetShopByID(campaign.shop_id);
+  const { userCampaignsEntry } = useSingleShop(campaign.shop_id);
+  const router = useRouter();
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -35,14 +40,24 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
     });
   };
 
-  const progressPercentage = Math.min(
-    (campaign.distributed / campaign.target_tokens) * 100,
-    100
-  );
+  const progressPercentage = () => {
+    const percentage = campaign.distributed / campaign.target;
+    return percentage * 100;
+  };
 
   const isEnded = campaign.ended === 1;
 
-  if (!shop) return null;
+  if (!shop || !campaign)
+    return (
+      <div className="">
+        <p className="text-sm text-foreground/50">No shop found</p>
+      </div>
+    );
+
+  const handleCopy = (item: string) => {
+    navigator.clipboard.writeText(item);
+    toast.success("Copied to clipboard");
+  };
 
   return (
     <div className="flex items-start justify-between p-2 rounded-lg hover:bg-foreground/5 transition-all duration-300">
@@ -50,22 +65,43 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
         <img
           src={campaign.icon}
           alt={campaign.name}
-          className="size-10 rounded-full"
+          className="size-10 rounded-full border border-foreground/30"
         />
         <div className="flex flex-col">
           <Drawer>
             <DrawerTrigger className="flex flex-col items-start">
               <p className="text-sm font-semibold">
-                {campaign.name.slice(0, 10)}...
+                {campaign.name.slice(0, 15)}...
               </p>
               <p className="text-sm text-foreground/80">
-                {formatDate(campaign.created_at)}
+                {campaign.ended === 1 ? "Ended" : "Active"}
               </p>
             </DrawerTrigger>
             <DrawerContent className="bg-[#d9d9d9]">
               <DrawerHeader>
-                <DrawerTitle className="mb-2">
-                  <p className="text-lg font-semibold">Campaign Details</p>
+                <DrawerTitle className="">
+                  <div className="flex items-center justify-between">
+                    <p className="text-lg font-semibold">Campaign Details</p>
+                    {!isEnded ? (
+                      <Button
+                        className="border-none bg-transparent shadow-none text-foreground hover:bg-foreground/90 flex items-center gap-1"
+                        onClick={() => {
+                          router.push(`/shops/${campaign.shop_id}`);
+                        }}
+                      >
+                        View Shop
+                        <IconEye className="size-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        className="border-none bg-transparent shadow-none text-foreground hover:bg-foreground/90 flex items-center gap-1"
+                        disabled
+                      >
+                        Campaign Ended
+                        <IconTrophy className="size-4" />
+                      </Button>
+                    )}
+                  </div>
                 </DrawerTitle>
                 <DrawerDescription className="md:w-[500px] w-full mx-auto my-0 flex flex-col gap-2 items-center justify-center">
                   <div className="flex flex-col gap-2 max-w-md mx-auto">
@@ -78,10 +114,10 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                   </p>
                   <div className="flex items-center gap-1">
                     <p className="text-lg font-semibold text-foreground/80">
-                      {campaign.distributed.toLocaleString()}
+                      {campaign.distributed?.toLocaleString()}
                     </p>
                     <h1 className="text-3xl font-semibold">
-                      / {campaign.target_tokens.toLocaleString()}
+                      / {campaign.target?.toLocaleString()}
                     </h1>
                   </div>
                   <div className="border p-2.5 rounded-3xl border-foreground/30 flex items-center gap-1 mb-4">
@@ -98,16 +134,16 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm text-foreground/80">Progress</p>
                       <p className="text-sm font-semibold">
-                        {progressPercentage.toFixed(1)}%
+                        {progressPercentage().toFixed(1)}%
                       </p>
                     </div>
-                    <Progress value={progressPercentage} className="h-2" />
+                    <Progress value={progressPercentage()} className="h-2" />
                     <div className="flex items-center justify-between mt-2">
                       <p className="text-xs text-foreground/60">
-                        {campaign.distributed.toLocaleString()} distributed
+                        {campaign.distributed?.toLocaleString()} distributed
                       </p>
                       <p className="text-xs text-foreground/60">
-                        {campaign.target_tokens.toLocaleString()} target
+                        {campaign.target?.toLocaleString()} target
                       </p>
                     </div>
                   </div>
@@ -117,21 +153,27 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                       <p className="text-sm text-foreground/80">Campaign ID</p>
                       <p className="text-sm font-semibold flex items-center gap-1">
                         {campaign.id.slice(0, 4)}...{campaign.id.slice(-4)}
-                        <IconCopy className="size-4" />
+                        <IconCopy
+                          className="size-4"
+                          onClick={() => handleCopy(campaign.id)}
+                        />
                       </p>
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-foreground/80">Token ID</p>
                       <p className="text-sm font-semibold flex items-center gap-1">
                         {campaign.token_id}
-                        <IconTarget className="size-4" />
+                        <IconCopy
+                          className="size-4"
+                          onClick={() => handleCopy(campaign.token_id)}
+                        />
                       </p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-foreground/80">Created</p>
+                      <p className="text-sm text-foreground/80">Participants</p>
                       <p className="text-sm font-semibold flex items-center gap-1">
-                        {formatDate(campaign.created_at)}
-                        <IconCalendar className="size-4" />
+                        {userCampaignsEntry?.length}
+                        <IconUsers className="size-4" />
                       </p>
                     </div>
                     <div className="flex items-center justify-between">
@@ -159,31 +201,17 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                         />
                       </p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-foreground/80">Description</p>
-                      <p className="text-sm font-semibold text-right max-w-[200px]">
+                    <div className="flex items-start flex-col">
+                      <p className="text-sm font-semibold text-foreground/80">
+                        Description
+                      </p>
+                      <p className="text-sm font-normal">
                         {campaign.description}
                       </p>
                     </div>
                   </div>
                 </DrawerDescription>
               </DrawerHeader>
-              <DrawerFooter className="md:w-[500px] w-full mx-auto my-0">
-                {!isEnded ? (
-                  <Button className="w-full bg-red-500 text-white hover:bg-red-600 flex items-center gap-1">
-                    End Campaign
-                    <IconX className="size-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full bg-foreground text-background hover:bg-foreground/90 flex items-center gap-1"
-                    disabled
-                  >
-                    Campaign Ended
-                    <IconTrophy className="size-4" />
-                  </Button>
-                )}
-              </DrawerFooter>
             </DrawerContent>
           </Drawer>
         </div>
@@ -191,9 +219,6 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
       <div className="flex flex-col items-end gap-1">
         <div className="flex items-center gap-1">
           <h1 className="text-sm font-semibold">{campaign.token_id}</h1>
-          <p className="text-sm font-semibold">
-            {campaign.distributed.toLocaleString()}
-          </p>
         </div>
         <p className="text-xs text-foreground/80">
           {campaign.id.slice(0, 4)}...{campaign.id.slice(-4)}

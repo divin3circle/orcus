@@ -26,7 +26,6 @@ function RecentTransactions() {
       </div>
     );
   }
-  console.log("transactions", transactions);
 
   return (
     <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-[45%]">

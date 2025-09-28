@@ -19,12 +19,11 @@ import {
   IconCopy,
   IconDownload,
 } from "@tabler/icons-react";
-import { ChevronsDown, ChevronsUp } from "lucide-react";
+import { ChevronsDown } from "lucide-react";
 import { formatBalance } from "@/hooks/useBalances";
 
 function RecentTransaction({ txn }: { txn: Transaction }) {
   const { data: shop } = useGetShopByID(txn.shop_id);
-  console.log("txn", txn);
   if (!shop) return null;
 
   const formatDate = (date: string) => {
@@ -34,8 +33,6 @@ function RecentTransaction({ txn }: { txn: Transaction }) {
       day: "numeric",
     });
   };
-
-  console.log("shop", shop);
 
   return (
     <div className="flex items-start justify-between p-2 rounded-lg hover:bg-foreground/5 transition-all duration-300">

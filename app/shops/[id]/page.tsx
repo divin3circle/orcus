@@ -14,7 +14,12 @@ function page() {
   const { id } = useParams();
   const { shop, performance, isLoading, campaigns, userCampaignsEntry } =
     useSingleShop(id as string);
-  if (!shop) return null;
+  if (!shop)
+    return (
+      <div className="">
+        <p className="text-sm text-foreground/50">No shop found</p>
+      </div>
+    );
 
   if (isLoading)
     return (

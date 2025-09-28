@@ -1,6 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { authAxios } from "@/lib/auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { BASE_URL } from "@/lib/utils";
 
 export interface Campaign {
   id: string;
@@ -8,7 +11,7 @@ export interface Campaign {
   name: string;
   token_id: string;
   description: string;
-  target_tokens: number;
+  target: number;
   distributed: number;
   icon: string;
   banner_image_url: string;
@@ -30,6 +33,36 @@ export interface CampaignStats {
   total_target_tokens: number;
   total_distributed_tokens: number;
   completion_rate: number;
+}
+
+export interface CreateCampaignRequest {
+  name: string;
+  token_id: string;
+  description: string;
+  target: number;
+  distributed: number;
+  ended: number;
+  icon: string;
+  banner_image_url: string;
+}
+
+export interface CreateCampaignResponse {
+  response: {
+    shop: {
+      id: string;
+      merchant_id: string;
+      name: string;
+      theme: string;
+      payment_id: string;
+      profile_image_url: string;
+      campaigns: Campaign[];
+    };
+    transaction_response: {
+      hash: string;
+      nodeID: string;
+      transactionID: string;
+    };
+  };
 }
 
 export const useMyCampaigns = () => {
@@ -91,4 +124,48 @@ async function getUserCampaignsEntryByShopID(
     return [];
   }
   return response.data.campaigns;
+}
+
+export const useCreateCampaign = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: ({
+      shopId,
+      campaignData,
+    }: {
+      shopId: string;
+      campaignData: CreateCampaignRequest;
+    }) => createCampaign(shopId, campaignData),
+    onSuccess: (data) => {
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["myCampaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["shopCampaigns"] });
+      queryClient.invalidateQueries({
+        queryKey: ["userCampaignsEntryByShopID"],
+      });
+
+      toast.success("Campaign created successfully!", {
+        description: "Your campaign has been created and is now active.",
+        descriptionClassName: "text-black",
+      });
+    },
+    onError: (error: any) => {
+      toast.error("Failed to create campaign", {
+        description: error.response?.data?.error || "Something went wrong",
+        descriptionClassName: "text-black",
+      });
+    },
+  });
+};
+
+async function createCampaign(
+  shopId: string,
+  campaignData: CreateCampaignRequest
+): Promise<CreateCampaignResponse> {
+  const response = await authAxios.put(`${BASE_URL}/shops/${shopId}`, {
+    campaigns: [campaignData],
+  });
+  return response.data;
 }

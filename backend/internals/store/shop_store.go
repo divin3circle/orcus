@@ -19,6 +19,7 @@ type Shop struct {
 
 type CampaignEntry struct {
 	ID             string `json:"id"`
+	ShopID         string `json:"shop_id"`
 	Name           string `json:"name"`
 	TokenID        string `json:"token_id"`
 	Description    string `json:"description"`
@@ -209,7 +210,7 @@ func (pg *PostgresShopStore) GetShopOwner(id string) (string, error) {
 
 func (pg *PostgresShopStore) GetShopCampaigns(id string) ([]*CampaignEntry, error) {
 	query := `
-	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url
+	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url, shop_id
 	FROM campaigns
 	WHERE shop_id = $1
 	`
@@ -222,7 +223,7 @@ func (pg *PostgresShopStore) GetShopCampaigns(id string) ([]*CampaignEntry, erro
 	result := []*CampaignEntry{}
 	for campaigns.Next() {
 		var campaign CampaignEntry
-		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl)
+		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl, &campaign.ShopID)
 		if err != nil {
 			return nil, err
 		}
@@ -325,7 +326,7 @@ func (pg *PostgresShopStore) GetUserCampaignEntryByShopID(shopID string) ([]*Use
 
 func (pg *PostgresShopStore) GetShopCampaignsByShopID(shopID string) ([]*CampaignEntry, error) {
 	query := `
-	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url
+	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url, shop_id
 	FROM campaigns
 	WHERE shop_id = $1
 	`
@@ -338,7 +339,7 @@ func (pg *PostgresShopStore) GetShopCampaignsByShopID(shopID string) ([]*Campaig
 	result := []*CampaignEntry{}
 	for campaigns.Next() {
 		var campaign CampaignEntry
-		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl)
+		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl, &campaign.ShopID)
 		if err != nil {
 			return nil, err
 		}
