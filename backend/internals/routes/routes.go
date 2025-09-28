@@ -53,6 +53,8 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Get("/transactions/merchant/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.TransactionHandler.HandleGetTransactionsByMerchantID))
 		r.Get("/my-campaigns/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopCampaigns))
 		r.Get("/shops/merchant/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopsByMerchantID))
+		r.Get("/shops/campaigns/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetShopCampaignsByShopID))
+		r.Get("/shops/campaigns/entries/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerGetUserCampaignsEntryByShopID))
 
 		r.Put("/shops/{id}", orcus.Middleware.RequireAuthenticatedMerchant(orcus.ShopHandler.HandlerUpdateShop))
 

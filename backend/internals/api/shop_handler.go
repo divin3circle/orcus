@@ -239,6 +239,41 @@ func (sh *ShopHandler) HandlerGetShopsByMerchantID(w http.ResponseWriter, r *htt
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"shops": shops})
 }
 
+func (sh *ShopHandler) HandlerGetUserCampaignsEntryByShopID(w http.ResponseWriter, r *http.Request) {
+	shopID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+
+	campaigns, err := sh.ShopStore.GetUserCampaignEntryByShopID(shopID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting user campaigns by shop id GetUserCampaignEntryByShopID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
+}
+
+func (sh *ShopHandler) HandlerGetShopCampaignsByShopID(w http.ResponseWriter, r *http.Request) {
+	shopID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	campaigns, err := sh.ShopStore.GetShopCampaignsByShopID(shopID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop campaigns by shop id GetShopCampaignsByShopID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
+}
+
 func generateTokenSymbol(name string) string {
 	names := strings.Split(name, " ")
 	symbol := ""

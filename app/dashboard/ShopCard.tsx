@@ -5,7 +5,6 @@ import cardBlueImage from "@/public/card-blue.png";
 import { IconCopy, IconShare } from "@tabler/icons-react";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -16,10 +15,18 @@ import {
 import { Button } from "@/components/ui/button";
 import qrMock from "@/public/qr-mock.png";
 import Link from "next/link";
+import { useSingleShopPerformance } from "@/hooks/useTransactions";
+import { Loader2 } from "lucide-react";
+import { formatBalance } from "@/hooks/useBalances";
+import { toast } from "sonner";
 
 function ShopCard({ shop }: { shop: MyShop }) {
   const { theme } = shop;
   const cardImage = theme === "red" ? cardRedImage : cardBlueImage;
+  const { data: shopPerformance, isLoading } = useSingleShopPerformance(
+    shop.id
+  );
+
   return (
     <div
       style={{ backgroundImage: `url(${cardImage.src})` }}
@@ -78,7 +85,13 @@ function ShopCard({ shop }: { shop: MyShop }) {
                   </h1>
                 </div>
               </div>
-              <Button className="w-full bg-foreground text-background hover:bg-foreground/90 flex items-center gap-1">
+              <Button
+                className="w-full bg-foreground text-background hover:bg-foreground/90 flex items-center gap-1"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${shop.id}`);
+                  toast.success("Link copied to clipboard");
+                }}
+              >
                 Copy Link
                 <IconCopy className="size-4" />
               </Button>
@@ -89,9 +102,14 @@ function ShopCard({ shop }: { shop: MyShop }) {
       <div className=" flex items-center justify-between">
         <div className="flex flex-col">
           <h1 className="text-base text-background">Balance</h1>
-          <h1 className="text-base font-semibold text-background">
-            KES 10,000
-          </h1>
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <h1 className="text-base font-semibold text-background">
+              KES {formatBalance(shopPerformance?.totalEarnings)}
+            </h1>
+          )}
+          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
         </div>
         <div className="flex flex-col">
           <h1 className="text-base text-background">Pay ID</h1>

@@ -54,3 +54,41 @@ async function getMyCampaigns(
   }
   return response.data.campaigns;
 }
+
+export const useShopCampaigns = (shopId: string) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["shopCampaigns", shopId],
+    queryFn: () => getShopCampaigns(shopId),
+    enabled: !!shopId,
+  });
+  return { data, isLoading, error };
+};
+
+async function getShopCampaigns(
+  shopId: string
+): Promise<Campaign[] | undefined> {
+  const response = await authAxios.get(`/shops/campaigns/${shopId}`);
+  if (response.status === 200 && !response.data.campaigns) {
+    return [];
+  }
+  return response.data.campaigns;
+}
+
+export const useUserCampaignsEntryByShopID = (shopId: string) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["userCampaignsEntryByShopID", shopId],
+    queryFn: () => getUserCampaignsEntryByShopID(shopId),
+    enabled: !!shopId,
+  });
+  return { data, isLoading, error };
+};
+
+async function getUserCampaignsEntryByShopID(
+  shopId: string
+): Promise<Campaign[] | undefined> {
+  const response = await authAxios.get(`/shops/campaigns/entries/${shopId}`);
+  if (response.status === 200 && !response.data.campaigns) {
+    return [];
+  }
+  return response.data.campaigns;
+}

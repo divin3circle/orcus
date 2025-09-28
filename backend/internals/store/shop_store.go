@@ -44,6 +44,8 @@ type ShopStore interface {
 	GetShopOwner(id string) (string, error)
 	GetShopCampaigns(id string) ([]*CampaignEntry, error)
 	GetShopsByMerchantID(merchantID string) ([]*Shop, error)
+	GetShopCampaignsByShopID(shopID string) ([]*CampaignEntry, error)
+	GetUserCampaignEntryByShopID(shopID string) ([]*UserCampaignEntry, error)
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -295,4 +297,52 @@ func (pg *PostgresShopStore) GetShopsByMerchantID(merchantID string) ([]*Shop, e
 	}
 
 	return shops, nil
+}
+
+func (pg *PostgresShopStore) GetUserCampaignEntryByShopID(shopID string) ([]*UserCampaignEntry, error) {
+	query := `
+	SELECT id, shop_id, campaign_id, token_balance
+	FROM campaigns_entry
+	WHERE shop_id = $1
+	`
+	campaigns, err := pg.db.Query(query, shopID)
+	if err != nil {
+		return nil, err
+	}
+	defer campaigns.Close()
+
+	result := []*UserCampaignEntry{}
+	for campaigns.Next() {
+		var campaign UserCampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.ShopID, &campaign.CampaignID, &campaign.TokenBalance)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &campaign)
+	}
+	return result, nil
+}
+
+func (pg *PostgresShopStore) GetShopCampaignsByShopID(shopID string) ([]*CampaignEntry, error) {
+	query := `
+	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url
+	FROM campaigns
+	WHERE shop_id = $1
+	`
+	campaigns, err := pg.db.Query(query, shopID)
+	if err != nil {
+		return nil, err
+	}
+	defer campaigns.Close()
+
+	result := []*CampaignEntry{}
+	for campaigns.Next() {
+		var campaign CampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &campaign)
+	}
+	return result, nil
 }

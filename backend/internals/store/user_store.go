@@ -31,6 +31,7 @@ type Purchase struct {
 
 type UserCampaignEntry struct {
 	ID string `json:"id"`
+	ShopID string `json:"shop_id"`
 	CampaignID string `json:"campaign_id"`
 	TokenBalance int64 `json:"token_balance"`
 }
@@ -227,7 +228,7 @@ func (pu *PostgresUserStore) IsParticipant(userID string, campaignID string) (bo
 
 func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*UserCampaignEntry, error) {
 	query := `
-	SELECT id, campaign_id, token_balance
+	SELECT id, shop_id, campaign_id, token_balance
 	FROM campaigns_entry
 	WHERE user_id = $1
 	`
@@ -240,7 +241,7 @@ func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*UserCampaignEnt
 	result := []*UserCampaignEntry{}
 	for campaigns.Next() {
 		var campaign UserCampaignEntry
-		err = campaigns.Scan(&campaign.ID, &campaign.CampaignID, &campaign.TokenBalance)
+		err = campaigns.Scan(&campaign.ID, &campaign.ShopID, &campaign.CampaignID, &campaign.TokenBalance)
 		if err != nil {
 			return nil, err
 		}

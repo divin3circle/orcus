@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { authAxios } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
-import { useMyShops } from "./useMyShops";
+import { useGetShopByID, useMyShops } from "./useMyShops";
 
 export interface Transaction {
   id: string;
@@ -58,7 +58,6 @@ async function getTransactions(
   return response.data.transactions;
 }
 
-// Hook to get total income from completed transactions
 export const useTotalIncome = () => {
   const { data: transactions } = useTransactions();
   const {
@@ -73,7 +72,6 @@ export const useTotalIncome = () => {
   return { data: totalIncome, isLoading, error };
 };
 
-// Hook to get completed transactions only
 export const useCompletedTransactions = () => {
   const { data: transactions } = useTransactions();
   const {
@@ -88,7 +86,6 @@ export const useCompletedTransactions = () => {
   return { data: completedTransactions, isLoading, error };
 };
 
-// Hook to get transaction statistics
 export const useTransactionStats = () => {
   const { data: transactions } = useTransactions();
   const {
@@ -103,7 +100,6 @@ export const useTransactionStats = () => {
   return { data: stats, isLoading, error };
 };
 
-// Helper function to calculate total income from completed transactions
 async function getTotalIncome(
   transactions: Transaction[] | undefined
 ): Promise<number> {
@@ -115,7 +111,6 @@ async function getTotalIncome(
     .reduce((acc, txn) => acc + txn.amount, 0);
 }
 
-// Helper function to get only completed transactions
 async function getCompletedTransactions(
   transactions: Transaction[] | undefined
 ): Promise<Transaction[]> {
@@ -125,7 +120,6 @@ async function getCompletedTransactions(
   return transactions.filter((txn) => txn.status === "completed");
 }
 
-// Helper function to get transaction statistics
 async function getTransactionStats(
   transactions: Transaction[] | undefined
 ): Promise<TransactionStats> {
@@ -154,7 +148,6 @@ async function getTransactionStats(
   };
 }
 
-// Helper function to format currency (KES)
 export const formatCurrency = (amount: number | undefined): string => {
   if (!amount) {
     return "0.00";
@@ -166,7 +159,6 @@ export const formatCurrency = (amount: number | undefined): string => {
   }).format(amount / 100); // Assuming amount is in cents
 };
 
-// Shop Performance Types
 export interface ShopPerformance {
   id: string;
   name: string;
@@ -178,7 +170,6 @@ export interface ShopPerformance {
 
 export interface ShopPerformances extends Array<ShopPerformance> {}
 
-// Hook to get shop performance data
 export const useShopPerformance = () => {
   const { data: shops } = useMyShops();
   const { data: transactions } = useCompletedTransactions();
@@ -196,7 +187,6 @@ export const useShopPerformance = () => {
   return { data: shopPerformance, isLoading, error };
 };
 
-// Helper function to calculate shop performance
 async function getShopPerformance(
   shops: any[] | undefined,
   transactions: Transaction[] | undefined
@@ -206,12 +196,10 @@ async function getShopPerformance(
   }
 
   return shops.map((shop, index) => {
-    // Filter transactions for this specific shop
     const shopTransactions = transactions.filter(
       (txn) => txn.shop_id === shop.id
     );
 
-    // Calculate metrics
     const totalEarnings = shopTransactions.reduce(
       (acc, txn) => acc + txn.amount,
       0
@@ -221,7 +209,6 @@ async function getShopPerformance(
     const averageTransaction =
       transactionCount > 0 ? totalEarnings / transactionCount : 0;
 
-    // Define shop colors array
     const shopColors = [
       "#FF6B6B", // Red
       "#4ECDC4", // Teal
@@ -241,4 +228,77 @@ async function getShopPerformance(
       fill: shopColors[index % shopColors.length],
     };
   });
+}
+
+export const useShopTransactions = (shopId: string) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["shopTransactions", shopId],
+    queryFn: () => getShopTransactions(shopId),
+    enabled: !!shopId,
+  });
+  return { data, isLoading, error };
+};
+
+async function getShopTransactions(shopId: string): Promise<Transaction[]> {
+  if (!shopId) {
+    throw new Error("Shop ID is required");
+  }
+  const response = await authAxios.get(`/transactions/shop/${shopId}`);
+  if (response.status === 200 && !response.data.transactions) {
+    return [];
+  }
+  return response.data.transactions;
+}
+
+export const useSingleShopPerformance = (shopId: string) => {
+  const { data: transactions } = useCompletedTransactions();
+  const { data: shop } = useGetShopByID(shopId);
+  const {
+    data: shopPerformance,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["shopPerformance", shopId, transactions],
+    queryFn: () => getSingleShopPerformance(shop, transactions),
+    enabled: !!(shop && transactions),
+  });
+  return { data: shopPerformance, isLoading, error };
+};
+
+async function getSingleShopPerformance(
+  shop: any | undefined,
+  transactions: Transaction[] | undefined
+): Promise<ShopPerformance> {
+  if (!shop || !transactions) {
+    return {
+      id: "",
+      name: "",
+      totalEarnings: 0,
+      transactionCount: 0,
+      averageTransaction: 0,
+      fill: "",
+    };
+  }
+
+  const shopTransactions = transactions.filter(
+    (txn) => txn.shop_id === shop.id
+  );
+
+  const totalEarnings = shopTransactions.reduce(
+    (acc, txn) => acc + txn.amount,
+    0
+  );
+
+  const transactionCount = shopTransactions.length;
+  const averageTransaction =
+    transactionCount > 0 ? totalEarnings / transactionCount : 0;
+
+  return {
+    id: shop.id,
+    name: shop.name,
+    totalEarnings,
+    transactionCount,
+    averageTransaction,
+    fill: shop.fill,
+  };
 }

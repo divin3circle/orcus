@@ -3,6 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authAxios } from "@/lib/auth";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { ShopPerformance, useSingleShopPerformance } from "./useTransactions";
+import {
+  useShopCampaigns,
+  useUserCampaignsEntryByShopID,
+} from "./useCampaigns";
 
 export interface MyShop {
   id: string;
@@ -19,6 +24,11 @@ export interface CreateShopRequest {
   name: string;
   profile_image_url: string;
   theme: string;
+}
+
+export interface SingleShop {
+  shop: MyShop;
+  performance: ShopPerformance;
 }
 
 export const useGetShopByID = (id: string) => {
@@ -95,3 +105,19 @@ async function createShop(shopData: CreateShopRequest): Promise<MyShop> {
   });
   return response.data.shop;
 }
+
+export const useSingleShop = (id: string) => {
+  const { data: shop, isLoading: isShopLoading } = useGetShopByID(id);
+  const { data: performance, isLoading: isPerformanceLoading } =
+    useSingleShopPerformance(id);
+  const { data: campaigns, isLoading: isCampaignsLoading } =
+    useShopCampaigns(id);
+  const { data: userCampaignsEntry, isLoading: isUserCampaignsEntryLoading } =
+    useUserCampaignsEntryByShopID(id);
+  const isLoading =
+    isShopLoading ||
+    isPerformanceLoading ||
+    isCampaignsLoading ||
+    isUserCampaignsEntryLoading;
+  return { shop, performance, campaigns, userCampaignsEntry, isLoading };
+};
