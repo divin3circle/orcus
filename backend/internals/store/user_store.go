@@ -31,7 +31,7 @@ type Purchase struct {
 
 type UserCampaignEntry struct {
 	ID string `json:"id"`
-	ShopID string `json:"shop_id"`
+	ShopID sql.NullString `json:"shop_id"`
 	CampaignID string `json:"campaign_id"`
 	TokenBalance int64 `json:"token_balance"`
 }
@@ -182,22 +182,49 @@ func (pu *PostgresUserStore) JoinCampaign(userID string, campaignID string, toke
 	if isParticipant {
 		return errors.New("user is already participating in this campaign")
 	}
+	
+	tx, err := pu.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	
 	query := `
 	INSERT INTO campaigns_entry (user_id, campaign_id, token_balance)
 	VALUES ($1, $2, $3)
 	`
-	_, err = pu.db.Exec(query, userID, campaignID, tokenBalance)
-	return err
+	_, err = tx.Exec(query, userID, campaignID, tokenBalance)
+	if err != nil {
+		return err
+	}
+	
+	updateQuery := `
+	UPDATE campaigns 
+	SET distributed = distributed + $1 
+	WHERE id = $2
+	`
+	_, err = tx.Exec(updateQuery, tokenBalance, campaignID)
+	if err != nil {
+		return err
+	}
+	
+	return tx.Commit()
 }
 
 func (pg *PostgresUserStore) UpdateCampaignEntry(userID string, campaignID string, tokenIncrement int64) error {
+    tx, err := pg.db.Begin()
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()
+    
     query := `
         UPDATE campaigns_entry 
         SET token_balance = token_balance + $1 
         WHERE user_id = $2 AND campaign_id = $3
     `
     
-    result, err := pg.db.Exec(query, tokenIncrement, userID, campaignID)
+    result, err := tx.Exec(query, tokenIncrement, userID, campaignID)
     if err != nil {
         return err
     }
@@ -211,7 +238,17 @@ func (pg *PostgresUserStore) UpdateCampaignEntry(userID string, campaignID strin
         return errors.New("no campaign entry found for user")
     }
     
-    return nil
+    updateQuery := `
+        UPDATE campaigns 
+        SET distributed = distributed + $1 
+        WHERE id = $2
+    `
+    _, err = tx.Exec(updateQuery, tokenIncrement, campaignID)
+    if err != nil {
+        return err
+    }
+    
+    return tx.Commit()
 }
 
 func (pu *PostgresUserStore) IsParticipant(userID string, campaignID string) (bool, error) {

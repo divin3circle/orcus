@@ -278,6 +278,23 @@ func (sh *ShopHandler) HandlerGetShopCampaignsByShopID(w http.ResponseWriter, r 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaigns": campaigns})
 }
 
+func (sh *ShopHandler) HandlerGetShopCampaignByCampaignID(w http.ResponseWriter, r *http.Request) {
+	campaignID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting campaign by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	campaign, err := sh.ShopStore.GetShopCampaignByCampaignID(campaignID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop campaign by campaign id GetShopCampaignByCampaignID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaign": campaign})
+}
+
 func generateTokenSymbol(name string) string {
 	if name == "" {
 		return "TKN"

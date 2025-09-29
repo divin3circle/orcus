@@ -30,17 +30,19 @@ type UserBuyTokenRequest struct {
 type UserCampaignRequest struct {
 	CampaignID string `json:"campaign_id"`
 	UserID string `json:"user_id"`
+	Username string `json:"username"`
 	TokenBalance int64 `json:"token_balance"`
 }
 
 type UserHandler struct {
 	UserStore store.UserStore
+	ShopStore store.ShopStore
 	Logger    *log.Logger
 	Client    *hiero.Client
 }
 
-func NewUserHandler(userStore store.UserStore, logger *log.Logger, client *hiero.Client) *UserHandler {
-	return &UserHandler{UserStore: userStore, Logger: logger, Client: client}
+func NewUserHandler(userStore store.UserStore, shopStore store.ShopStore, logger *log.Logger, client *hiero.Client) *UserHandler {
+	return &UserHandler{UserStore: userStore, ShopStore: shopStore, Logger: logger, Client: client}
 }
 
 func (uh *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +168,14 @@ func (uh *UserHandler) HandleBuyToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Add payment validation from Daraja or Stripe API
-	// TODO: Transfer KSH token from operator account to user account
+
+
+	transactionID, err := uh.transferTokenToUser(req.UserID, req.Amount * TOKENDECIMALS, os.Getenv("KSH_TOKEN_ID"))
+	if err != nil {
+		uh.Logger.Printf("ERROR: error transferring token to user in transferTokenToUser: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
 
 	err = uh.UserStore.BuyToken(req.UserID, req.Amount)
 	if err != nil {
@@ -175,7 +184,7 @@ func (uh *UserHandler) HandleBuyToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	message := fmt.Sprintf("KSH token bought successfully for %d KSH", req.Amount)
-	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": message})
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": message, "transaction_id": transactionID})
 }
 
 func (uh *UserHandler) HandleGetUserPurchases(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +231,30 @@ func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = uh.UserStore.JoinCampaign(req.UserID, req.CampaignID, req.TokenBalance)
+	campaign, err := uh.ShopStore.GetShopCampaignByCampaignID(req.CampaignID)
+	if campaign == nil {
+		uh.Logger.Printf("ERROR: error getting campaign by id in GetCampaignByID: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "Campaign not found"})
+		return
+	}
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting campaign by id in GetCampaignByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	user, err := uh.UserStore.GetUserByUsername(req.Username)
+	if user == nil {
+		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "User not found"})
+		return
+	}
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	err = uh.UserStore.JoinCampaign(user.ID, req.CampaignID, req.TokenBalance)
 	if err != nil {
 		uh.Logger.Printf("ERROR: error joining campaign in JoinCampaign: %v", err)
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
@@ -230,8 +262,14 @@ func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request
 	}
 
 	NotifyMerchant(w, req.CampaignID, "joined_campaign", uh.Client)
+	transactionID, err := uh.transferTokenToUser(user.AccountID, req.TokenBalance * TOKENDECIMALS, campaign.TokenID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error transferring token to user in transferTokenToUser: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
 
-	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign joined successfully"})
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign joined successfully", "transaction_id": transactionID})
 }
 
 func (uh *UserHandler) HandleIsParticipant(w http.ResponseWriter, r *http.Request) {
@@ -262,14 +300,44 @@ func (uh *UserHandler) HandleUpdateCampaignEntry(w http.ResponseWriter, r *http.
 		return
 	}
 
-	err = uh.UserStore.UpdateCampaignEntry(req.UserID, req.CampaignID, req.TokenBalance)
+	campaign, err := uh.ShopStore.GetShopCampaignByCampaignID(req.CampaignID)
+	if campaign == nil {
+		uh.Logger.Printf("ERROR: error getting campaign by id in GetCampaignByID: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "Campaign not found"})
+		return
+	}
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting campaign by id in GetCampaignByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	user, err := uh.UserStore.GetUserByUsername(req.Username)
+	if user == nil {
+		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "User not found"})
+		return
+	}
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	err = uh.UserStore.UpdateCampaignEntry(user.ID, req.CampaignID, req.TokenBalance)
 	if err != nil {
 		uh.Logger.Printf("ERROR: error updating campaign entry in UpdateCampaignEntry: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign entry updated successfully"})
+	transactionID, err := uh.transferTokenToUser(user.AccountID, req.TokenBalance * TOKENDECIMALS, campaign.TokenID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error transferring token to user in transferTokenToUser: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign entry updated successfully", "transaction_id": transactionID})
 }
 
 func (uh *UserHandler) validateRegisterRequest(registerRequest *UserRegisterRequest) error {
@@ -295,4 +363,50 @@ func (uh *UserHandler) validateRegisterRequest(registerRequest *UserRegisterRequ
 		return errors.New("username must be between 3 and 50 characters long")
 	}
 	return nil
+}
+
+func (uh *UserHandler) transferTokenToUser(accountID string, amount int64, tokenId string) (string, error) {
+	uh.Logger.Printf("Transferring token to user account: %v", accountID)
+	uh.Logger.Printf("Amount: %v", amount)
+	uh.Logger.Printf("Token ID: %v", tokenId)
+	uh.Logger.Printf("Operator Account ID: %v", os.Getenv("OPERATOR_ACCOUNT_ID"))
+	uh.Logger.Printf("Operator Key: %v", os.Getenv("OPERATOR_KEY"))
+	userAccountID, err := hiero.AccountIDFromString(accountID)
+	if err != nil {
+		return "", err
+	}
+	tokenID, err := hiero.TokenIDFromString(tokenId)
+	if err != nil {
+		return "", err
+	}
+	operatorAccountID, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ACCOUNT_ID"))
+	if err != nil {
+		return "", err
+	}
+	operatorKey, err := hiero.PrivateKeyFromStringEd25519(os.Getenv("OPERATOR_KEY"))
+	if err != nil {
+		return "", err
+	}
+
+	tokenTransferTransaction, err := hiero.NewTransferTransaction().
+		AddTokenTransfer(tokenID, operatorAccountID, -amount).
+		AddTokenTransfer(tokenID, userAccountID, amount).
+		FreezeWith(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error freezing transaction: %v", err)
+		return "", err
+	}
+	transferTransaction := tokenTransferTransaction.Sign(operatorKey)
+	txnResponse, err := transferTransaction.Execute(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error executing transaction: %v", err)
+		return "", err
+	}
+	receipt, err := txnResponse.GetReceipt(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting receipt response for token transfer transaction: %v", err)
+		return "", err
+	}
+	uh.Logger.Printf("KSH token transferred successfully to user account: %v", receipt.AccountID)
+	return receipt.TransactionID.String(), nil
 }
