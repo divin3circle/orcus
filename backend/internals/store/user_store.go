@@ -53,6 +53,7 @@ func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
 type UserStore interface {
 	CreateUser(user *User) (*User, error)
 	GetUserByUsername(username string) (*User, error)
+	GetUserByID(id string) (*User, error)
 	UpdateUser(user *User) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
 	BuyToken(userID string, amount int64) error
@@ -88,6 +89,26 @@ func (pu *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	WHERE username = $1
 	`
 	err := pu.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (pu *PostgresUserStore) GetUserByID(id string) (*User, error) {
+	user := &User{
+		PasswordHash: password{},
+	}
+	
+	query := `
+	SELECT id, username, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
+	FROM users
+	WHERE id = $1
+	`
+	err := pu.db.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

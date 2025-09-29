@@ -169,8 +169,14 @@ func (uh *UserHandler) HandleBuyToken(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Add payment validation from Daraja or Stripe API
 
+	user, err := uh.UserStore.GetUserByID(req.UserID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
 
-	transactionID, err := uh.transferTokenToUser(req.UserID, req.Amount * TOKENDECIMALS, os.Getenv("KSH_TOKEN_ID"))
+	transactionID, err := uh.transferTokenToUser(user.AccountID, req.Amount * TOKENDECIMALS, os.Getenv("KSH_TOKEN_ID"))
 	if err != nil {
 		uh.Logger.Printf("ERROR: error transferring token to user in transferTokenToUser: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
@@ -242,7 +248,7 @@ func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
-	user, err := uh.UserStore.GetUserByUsername(req.Username)
+	user, err := uh.UserStore.GetUserByID(req.UserID)
 	if user == nil {
 		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "User not found"})
