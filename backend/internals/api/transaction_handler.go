@@ -102,6 +102,8 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		return
 	}
 
+	fees := calculateFeesInKsh(transactionRequest.Amount)
+
 	// use decrypted the key and sign the hedera transaction with it to transfer funds to the merchant
 	tokenId, err := hiero.TokenIDFromString(os.Getenv("KSH_TOKEN_ID"))
 	if err != nil {
@@ -109,6 +111,16 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+
+	// check if the user has enough tokens
+	err = th.checkTokenBalance(userAccountID, tokenId, float64(transactionRequest.Amount + parseFeesToInt64(fees)))
+	if err != nil {
+		th.Logger.Printf("ERROR: error checking token balance: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+
 	amount := transactionRequest.Amount * TOKENDECIMALS
 
 	tokenTransferTransaction, err := hiero.NewTransferTransaction().
@@ -128,7 +140,7 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		return
 	}
 
-	fees := calculateFeesInKsh(transactionRequest.Amount)
+	
 
 	tokenFeeTransaction, err := hiero.NewTransferTransaction().
 		AddTokenTransfer(tokenId, userAccountID, -parseFeesToInt64(fees)).
@@ -263,6 +275,28 @@ func calculateFeesInKsh(amount int64) float64 {
 	} else {
 		return 0.005 * float64(amount)
 	}
+}
+
+func (th *TransactionHandler) checkTokenBalance(accountID hiero.AccountID, tokenId hiero.TokenID, amount float64) error {
+	balanceQuery := hiero.NewAccountBalanceQuery().
+	SetAccountID(accountID)
+
+	balanceResponse, err := balanceQuery.Execute(th.Client)
+	if err != nil {
+		th.Logger.Printf("ERROR: error getting balance: %v", err)
+		return err
+	}
+
+	accountBalance := float64(balanceResponse.Tokens.Get(tokenId)) / 100
+
+	th.Logger.Printf("Account balance: %f", accountBalance)
+	th.Logger.Printf("Amount: %f", amount)
+
+	if accountBalance < amount {
+		return errors.New("insufficient balance")
+	}
+
+	return nil
 }
 
 func parseFeesToInt64(amount float64) int64 {

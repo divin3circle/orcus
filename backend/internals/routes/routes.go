@@ -69,6 +69,7 @@ func SetUpRoutes(orcus *app.Application) *chi.Mux {
 		r.Get("/purchases/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserPurchases))
 		r.Get("/campaigns/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleGetUserCampaigns))
 		r.Post("/campaigns", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleJoinCampaign))
+		r.Get("/user/shops/{id}", orcus.Middleware.RequireAuthenticatedUser(orcus.ShopHandler.HandlerGetShopByID))
 
 		r.Post("/campaigns/is-participant", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleIsParticipant))
 		r.Post("/campaigns/update", orcus.Middleware.RequireAuthenticatedUser(orcus.UserHandler.HandleUpdateCampaignEntry))

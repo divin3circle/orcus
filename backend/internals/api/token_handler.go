@@ -85,7 +85,7 @@ func (th *TokenHandler) HandleCreateUserToken(w http.ResponseWriter, r *http.Req
 	}
 
 	if user == nil {
-		th.Logger.Printf("ERROR: error getting user by username in GetUserByUsername: %v", err)
+		th.Logger.Printf("ERROR: error getting user by username in GetUserByUsername: %v", req.Username)
 		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid username or password"})
 		return
 	}
