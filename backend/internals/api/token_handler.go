@@ -78,9 +78,15 @@ func (th *TokenHandler) HandleCreateUserToken(w http.ResponseWriter, r *http.Req
 	}
 
 	user, err := th.UserStore.GetUserByUsername(req.Username)
-	if err != nil || user == nil {
-		th.Logger.Printf("ERROR: error getting merchant by username in GetMerchantByUsername: %v", err)
+	if err != nil{
+		th.Logger.Printf("ERROR: error getting user by username in GetUserByUsername: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	if user == nil {
+		th.Logger.Printf("ERROR: error getting user by username in GetUserByUsername: %v", err)
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid username or password"})
 		return
 	}
 
