@@ -10,6 +10,7 @@ import (
 type User struct {
 	ID              string    `json:"id"`
 	Username        string    `json:"username"`
+	TopicID         string    `json:"topic_id"`
 	MobileNumber    string    `json:"mobile_number"`
 	PasswordHash    password  `json:"-"`
 	EncryptedKey    string    `json:"-"`
@@ -66,12 +67,12 @@ type UserStore interface {
 
 func (pu *PostgresUserStore) CreateUser(user *User) (*User, error) {
 	query := `
-	INSERT INTO users (username, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url)
+	INSERT INTO users (username, topic_id, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url)
 	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING id, created_at, updated_at;
 	`
 
-	err := pu.db.QueryRow(query, user.Username, user.MobileNumber, user.PasswordHash.hash, user.EncryptedKey, user.AccountID, user.ProfileImageUrl).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+	err := pu.db.QueryRow(query, user.Username, user.TopicID, user.MobileNumber, user.PasswordHash.hash, user.EncryptedKey, user.AccountID, user.ProfileImageUrl).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -84,11 +85,11 @@ func (pu *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 
 	query := `
-	SELECT id, username, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
+	SELECT id, username, topic_id, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
 	FROM users
 	WHERE username = $1
 	`
-	err := pu.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
+	err := pu.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.TopicID, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -104,11 +105,11 @@ func (pu *PostgresUserStore) GetUserByID(id string) (*User, error) {
 	}
 	
 	query := `
-	SELECT id, username, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
+	SELECT id, username, topic_id, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
 	FROM users
 	WHERE id = $1
 	`
-	err := pu.db.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
+	err := pu.db.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.TopicID, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

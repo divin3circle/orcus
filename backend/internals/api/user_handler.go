@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 
@@ -107,6 +108,7 @@ func (uh *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) 
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
+	user.TopicID = uh.generateTopicID(w, user)
 
 	createdUser, err := uh.UserStore.CreateUser(user)
 	if err != nil {
@@ -189,6 +191,7 @@ func (uh *UserHandler) HandleBuyToken(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+	NotifyUser(w, user.TopicID, "buy", uh.Client)
 	message := fmt.Sprintf("KSH token bought successfully for %d KSH", req.Amount)
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": message, "transaction_id": transactionID})
 }
@@ -274,6 +277,7 @@ func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+	NotifyUser(w, user.TopicID, "join", uh.Client)
 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign joined successfully", "transaction_id": transactionID})
 }
@@ -342,8 +346,30 @@ func (uh *UserHandler) HandleUpdateCampaignEntry(w http.ResponseWriter, r *http.
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
-
+	NotifyUser(w, user.TopicID, "update", uh.Client)
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign entry updated successfully", "transaction_id": transactionID})
+}
+
+func (uh *UserHandler) generateTopicID(w http.ResponseWriter, user *store.User) string {
+	transaction := hiero.NewTopicCreateTransaction().
+	SetTopicMemo(user.Username)
+	txResponse, err := transaction.Execute(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error executing topic create transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		panic(err)
+	}
+	receipt, err := txResponse.GetReceipt(uh.Client)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting receipt response for topic create transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		panic(err)
+	}
+
+	topicID := *receipt.TopicID
+
+	fmt.Println("\nNotification topic created:", topicID.String())
+	return topicID.String()
 }
 
 func (uh *UserHandler) validateRegisterRequest(registerRequest *UserRegisterRequest) error {
@@ -415,4 +441,62 @@ func (uh *UserHandler) transferTokenToUser(accountID string, amount int64, token
 	}
 	uh.Logger.Printf("KSH token transferred successfully to user account: %v", receipt.AccountID)
 	return receipt.TransactionID.String(), nil
+}
+
+func NotifyUser(w http.ResponseWriter, topicID string, messageType string, client *hiero.Client) {
+	var messageContent string
+
+	switch messageType {
+	case "transaction":
+		messageContent = "Payment sent successfully"
+	case "buy":
+		messageContent = "KSH Token bought successfully"
+	case "send":
+		messageContent = "KSH Token sent successfully"
+	case "join":
+		messageContent = "Campaign joined successfully"
+	case "update":
+		messageContent = "Campaign entry updated successfully"
+	default:
+		messageContent = "Unknown message type"
+	}
+
+	topicIDObj, err := hiero.TopicIDFromString(topicID)
+	if err != nil {
+		fmt.Printf("ERROR: error getting topic id: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	topicMessage := NotificationMessage{
+		Type: messageType,
+		MessageContent: messageContent,
+		Timestamp: time.Now().Unix(),
+	}
+
+	marshalledMessage, err := json.Marshal(topicMessage)
+	if err != nil {
+		fmt.Printf("ERROR: error marshalling message: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	submitMessage, err := hiero.NewTopicMessageSubmitTransaction().
+		SetMessage(marshalledMessage).
+		SetTopicID(topicIDObj).
+		Execute(client)
+	if err != nil {
+		fmt.Printf("ERROR: error freezing transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	receipt, err := submitMessage.GetReceipt(client)
+	if err != nil {
+		fmt.Printf("ERROR: error getting receipt response for topic message submit transaction: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("Topic message submitted successfully: %v", receipt.TopicID)
 }
