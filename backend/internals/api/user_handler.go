@@ -351,6 +351,22 @@ func (uh *UserHandler) HandleUpdateCampaignEntry(w http.ResponseWriter, r *http.
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign entry updated successfully", "transaction_id": transactionID})
 }
 
+func (uh *UserHandler) HandleGetUserByID(w http.ResponseWriter, r *http.Request) {
+	userID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		uh.Logger.Printf("ERROR: error reading user id in ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+	user, err := uh.UserStore.GetUserByID(userID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"user": user})
+}
+
 func (uh *UserHandler) generateTopicID(w http.ResponseWriter, user *store.User) string {
 	transaction := hiero.NewTopicCreateTransaction().
 	SetTopicMemo(user.Username)
