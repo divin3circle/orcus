@@ -138,6 +138,7 @@ func (uh *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) 
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+	NotifyUser(w, user.TopicID, "account", uh.Client)
 	uh.Logger.Printf("KSH token associated successfully with user account: %v", receipt.AccountID)
 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"user": createdUser})
@@ -458,7 +459,7 @@ func NotifyUser(w http.ResponseWriter, topicID string, messageType string, clien
 	case "update":
 		messageContent = "Campaign entry updated successfully"
 	default:
-		messageContent = "Unknown message type"
+		messageContent = "Account created successfully"
 	}
 
 	topicIDObj, err := hiero.TopicIDFromString(topicID)

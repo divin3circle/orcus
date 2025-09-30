@@ -68,7 +68,7 @@ type UserStore interface {
 func (pu *PostgresUserStore) CreateUser(user *User) (*User, error) {
 	query := `
 	INSERT INTO users (username, topic_id, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id, created_at, updated_at;
 	`
 
