@@ -17,12 +17,13 @@ import (
 
 type ShopHandler struct{
 	ShopStore store.ShopStore
+	UserStore store.UserStore
 	Logger *log.Logger
 	Client *hiero.Client
 }
 
-func NewShopHandler(shopStore store.ShopStore, logger *log.Logger, client *hiero.Client) *ShopHandler {
-	return &ShopHandler{ShopStore: shopStore, Logger: logger, Client: client}
+func NewShopHandler(shopStore store.ShopStore, userStore store.UserStore, logger *log.Logger, client *hiero.Client) *ShopHandler {
+	return &ShopHandler{ShopStore: shopStore, UserStore: userStore, Logger: logger, Client: client}
 }
 
 func (sh *ShopHandler) HandlerGetShopByID(w http.ResponseWriter, r *http.Request) {
@@ -293,6 +294,110 @@ func (sh *ShopHandler) HandlerGetShopCampaignByCampaignID(w http.ResponseWriter,
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"campaign": campaign})
+}
+
+func (sh *ShopHandler) HandlerGetCampaignParticipants(w http.ResponseWriter, r *http.Request) {
+	campaignID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting campaign by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	participants, err := sh.ShopStore.GetCampaignParticipants(campaignID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting campaign participants GetCampaignParticipants: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"participants": participants})
+}
+
+func (sh *ShopHandler) HandlerEndCampaign(w http.ResponseWriter, r *http.Request) {
+	campaignID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting campaign by id ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	participants, err := sh.ShopStore.GetCampaignParticipants(campaignID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting campaign participants GetCampaignParticipants: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	for _, participant := range participants {
+		user, err := sh.UserStore.GetUserByID(participant.UserID)
+		if err != nil {
+			sh.Logger.Printf("ERROR: error getting user by id GetUserByID: %v", err)
+			utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+			return
+		}
+		NotifyUser(w, user.TopicID, "airdrop", sh.Client)
+	}
+
+	err = sh.ShopStore.EndCampaign(campaignID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error ending campaign EndCampaign: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+}
+
+
+func (sh *ShopHandler) HandleGetCampaignParticipants(w http.ResponseWriter, r *http.Request) {
+	var detailedParticipants []struct {
+	AccountID string `json:"account_id"`
+	TokenBalance int64 `json:"token_balance"`
+	UserID string `json:"user_id"`
+	UserTopicID string `json:"user_topic_id"`
+	}
+
+	campaignID, err := utils.ReadIDParam(r, "id")
+	if err != nil {
+		sh.Logger.Printf("ERROR: error reading campaign id at ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+	
+	campaign, err := sh.ShopStore.GetShopCampaignByCampaignID(campaignID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting shop campaign by campaign id GetShopCampaignByCampaignID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	
+	participants, err := sh.ShopStore.GetCampaignParticipants(campaignID)
+	if err != nil {
+		sh.Logger.Printf("ERROR: error getting campaign participants GetCampaignParticipants: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+	for _, participant := range participants {
+		user, err := sh.UserStore.GetUserByID(participant.UserID)
+		if err != nil {
+			sh.Logger.Printf("ERROR: error getting user by id GetUserByID: %v", err)
+			utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+			return
+		}
+		detailedParticipant := struct {
+			AccountID string `json:"account_id"`
+			TokenBalance int64 `json:"token_balance"`
+			UserID string `json:"user_id"`
+			UserTopicID string `json:"user_topic_id"`
+		}{
+			AccountID: user.AccountID,
+			TokenBalance: participant.TokenBalance,
+			UserID: participant.UserID,
+			UserTopicID: user.TopicID,
+		}
+		detailedParticipants = append(detailedParticipants, detailedParticipant)
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"participants": detailedParticipants, "campaign": campaign})
 }
 
 func generateTokenSymbol(name string) string {

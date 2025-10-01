@@ -470,6 +470,8 @@ func NotifyUser(w http.ResponseWriter, topicID string, messageType string, clien
 		messageContent = "KSH Token bought successfully"
 	case "send":
 		messageContent = "KSH Token sent successfully"
+	case "airdrop":
+		messageContent = "You have received KSH tokens from a merchant"
 	case "join":
 		messageContent = "Campaign joined successfully"
 	case "update":

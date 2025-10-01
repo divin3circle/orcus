@@ -48,6 +48,8 @@ type ShopStore interface {
 	GetShopsByMerchantID(merchantID string) ([]*Shop, error)
 	GetShopCampaignsByShopID(shopID string) ([]*CampaignEntry, error)
 	GetUserCampaignEntryByShopID(shopID string) ([]*UserCampaignEntry, error)
+	GetCampaignParticipants(campaignID string) ([]*UserCampaignEntry, error)
+	EndCampaign(campaignID string) error
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -366,4 +368,41 @@ func (pg *PostgresShopStore) GetShopCampaignByCampaignID(campaignID string) (*Ca
 	}
 
 	return campaign, nil
+}
+
+func (pg *PostgresShopStore) GetCampaignParticipants(campaignID string) ([]*UserCampaignEntry, error) {
+	query := `
+	SELECT id, user_id, campaign_id, token_balance
+	FROM campaigns_entry
+	WHERE campaign_id = $1
+	`
+	campaigns, err := pg.db.Query(query, campaignID)
+	if err != nil {
+		return nil, err
+	}
+	defer campaigns.Close()
+
+	result := []*UserCampaignEntry{}
+	for campaigns.Next() {
+		var campaign UserCampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.UserID, &campaign.CampaignID, &campaign.TokenBalance)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &campaign)
+	}
+	return result, nil
+}
+
+func (pg *PostgresShopStore) EndCampaign(campaignID string) error {
+	query := `
+	UPDATE campaigns
+	SET ended = 1
+	WHERE id = $1
+	`
+	_, err := pg.db.Exec(query, campaignID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

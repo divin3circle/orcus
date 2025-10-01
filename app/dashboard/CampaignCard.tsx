@@ -1,47 +1,39 @@
 "use client";
 import { Campaign } from "@/hooks/useCampaigns";
-import { useGetShopByID, useSingleShop } from "@/hooks/useMyShops";
+import { useCampaignParticipants, useGetShopByID } from "@/hooks/useMyShops";
 import React from "react";
-import Link from "next/link";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  IconCopy,
-  IconTarget,
-  IconUsers,
-  IconTrophy,
-  IconX,
-  IconEye,
-} from "@tabler/icons-react";
-import { ChevronsUp } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { IconCopy, IconUsers, IconTrophy, IconX } from "@tabler/icons-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { formatBalance } from "@/hooks/useBalances";
+import { useWallet } from "@/contexts/WalletContext";
+import { formatAccountId, useAirdropTokens } from "@/hooks/useTransaction";
 
 function CampaignCard({ campaign }: { campaign: Campaign }) {
   const { data: shop } = useGetShopByID(campaign.shop_id);
-  const { userCampaignsEntry } = useSingleShop(campaign.shop_id);
-  const router = useRouter();
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+  const { data: participants, isLoading: isParticipantsLoading } =
+    useCampaignParticipants(campaign.id);
+  const { accountId } = useWallet();
+  const { airdropTokens, isPending, isSuccess, airdropData } = useAirdropTokens(
+    campaign.id,
+    formatAccountId(accountId || "")
+  );
+  console.log("airdropData:", airdropData);
+  console.log("isSuccess:", isSuccess);
+  console.log("isPending:", isPending);
 
   const progressPercentage = () => {
-    const percentage = campaign.distributed / campaign.target;
+    const percentage = campaign.distributed / (campaign.target / 100);
     return percentage * 100;
   };
 
@@ -82,25 +74,18 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                 <DrawerTitle className="">
                   <div className="flex items-center justify-between">
                     <p className="text-lg font-semibold">Campaign Details</p>
-                    {!isEnded ? (
+                    <div className="flex flex-col">
                       <Button
-                        className="border-none bg-transparent shadow-none text-foreground hover:bg-foreground/90 flex items-center gap-1"
-                        onClick={() => {
-                          router.push(`/shops/${campaign.shop_id}`);
-                        }}
+                        className="w-full bg-red-500 hover:bg-red-500/90 ease-in-out duration-300"
+                        onClick={() => airdropTokens()}
+                        disabled={isPending}
                       >
-                        View Shop
-                        <IconEye className="size-4" />
+                        End Campaign
+                        {isPending && (
+                          <Loader2 className="size-4 animate-spin" />
+                        )}
                       </Button>
-                    ) : (
-                      <Button
-                        className="border-none bg-transparent shadow-none text-foreground hover:bg-foreground/90 flex items-center gap-1"
-                        disabled
-                      >
-                        Campaign Ended
-                        <IconTrophy className="size-4" />
-                      </Button>
-                    )}
+                    </div>
                   </div>
                 </DrawerTitle>
                 <DrawerDescription className="md:w-[500px] w-full mx-auto my-0 flex flex-col gap-2 items-center justify-center">
@@ -112,14 +97,14 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                     />
                   </div>
                   <p className="text-sm text-foreground/80">
-                    Campaign Progress
+                    Campaign {isEnded ? "Ended" : "Progress"}
                   </p>
                   <div className="flex items-center gap-1">
                     <p className="text-lg font-semibold text-foreground/80">
                       {campaign.distributed?.toLocaleString()}
                     </p>
                     <h1 className="text-3xl font-semibold">
-                      / {campaign.target?.toLocaleString()}
+                      / {formatBalance(campaign.target)}
                     </h1>
                   </div>
                   <div className="border p-2.5 rounded-3xl border-foreground/30 flex items-center gap-1 mb-4">
@@ -130,8 +115,6 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                     />
                     <p className="text-sm">{campaign.name}</p>
                   </div>
-
-                  {/* Progress Bar */}
                   <div className="w-full bg-foreground/5 p-4 rounded-3xl">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm text-foreground/80">Progress</p>
@@ -145,7 +128,7 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                         {campaign.distributed?.toLocaleString()} distributed
                       </p>
                       <p className="text-xs text-foreground/60">
-                        {campaign.target?.toLocaleString()} target
+                        {formatBalance(campaign.target)} target
                       </p>
                     </div>
                   </div>
@@ -174,7 +157,11 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-foreground/80">Participants</p>
                       <p className="text-sm font-semibold flex items-center gap-1">
-                        {userCampaignsEntry?.length}
+                        {isParticipantsLoading ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          participants?.participants?.length
+                        )}
                         <IconUsers className="size-4" />
                       </p>
                     </div>

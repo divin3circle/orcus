@@ -11,6 +11,16 @@ import {
   Campaign,
 } from "./useCampaigns";
 
+export interface ParticipantsResponse {
+  participants: {
+    account_id: string;
+    token_balance: number;
+    user_id: string;
+    user_topic_id: string;
+  }[];
+  campaign: Campaign;
+}
+
 export interface MyShop {
   id: string;
   merchant_id: string;
@@ -109,6 +119,22 @@ async function createShop(shopData: CreateShopRequest): Promise<MyShop> {
   return response.data.shop;
 }
 
+export const useCampaignParticipants = (id: string) => {
+  const { data: participants, isLoading: isParticipantsLoading } = useQuery({
+    queryKey: ["campaignParticipants", id],
+    queryFn: () => getCampaignParticipants(id),
+    enabled: !!id,
+  });
+  return { data: participants, isLoading: isParticipantsLoading };
+};
+
+async function getCampaignParticipants(
+  id: string
+): Promise<ParticipantsResponse> {
+  const response = await authAxios.get(`/shops/campaigns/participants/${id}`);
+  return response.data;
+}
+
 export const useSingleShop = (id: string) => {
   const { data: shop, isLoading: isShopLoading } = useGetShopByID(id);
   const { data: performance, isLoading: isPerformanceLoading } =
@@ -117,6 +143,7 @@ export const useSingleShop = (id: string) => {
     useShopCampaigns(id);
   const { data: userCampaignsEntry, isLoading: isUserCampaignsEntryLoading } =
     useUserCampaignsEntryByShopID(id);
+
   const isLoading =
     isShopLoading ||
     isPerformanceLoading ||

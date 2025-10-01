@@ -98,7 +98,7 @@ function DashboardHeader() {
                   <Loader2 className="w-5 h-5 mt-8 animate-spin" />
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 mt-4 md:w-[500px] w-full mx-auto my-0">
+                <div className="flex flex-col-reverse gap-2 mt-4 md:w-[500px] w-full mx-auto my-0">
                   {notifications?.slice(0, 5).map((notification) => (
                     <NotificationCard
                       key={notification.timestamp}
