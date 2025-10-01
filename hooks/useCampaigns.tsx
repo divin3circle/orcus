@@ -172,7 +172,7 @@ async function createCampaign(
 }
 
 export async function endCampaign(campaignId: string): Promise<string> {
-  const response = await authAxios.put(
+  const response = await authAxios.post(
     `${BASE_URL}/shops/campaigns/end/${campaignId}`
   );
   return response.data;

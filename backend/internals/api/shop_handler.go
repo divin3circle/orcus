@@ -320,6 +320,7 @@ func (sh *ShopHandler) HandlerEndCampaign(w http.ResponseWriter, r *http.Request
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
 		return
 	}
+	sh.Logger.Printf("INFO: ending campaign: %s", campaignID)
 
 	participants, err := sh.ShopStore.GetCampaignParticipants(campaignID)
 	if err != nil {
@@ -335,6 +336,7 @@ func (sh *ShopHandler) HandlerEndCampaign(w http.ResponseWriter, r *http.Request
 			utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 			return
 		}
+		sh.Logger.Printf("INFO: notifying user: %s", user.TopicID)
 		NotifyUser(w, user.TopicID, "airdrop", sh.Client)
 	}
 

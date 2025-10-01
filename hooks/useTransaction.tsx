@@ -1,10 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   DAppConnector,
   HederaJsonRpcMethod,
   HederaChainId,
   transactionToBase64String,
+  SignAndExecuteTransactionResult,
 } from "@hashgraph/hedera-wallet-connect";
 import {
   AccountId,
@@ -19,7 +20,7 @@ import {
 import { useAppKitAccount } from "@reown/appkit/react";
 import { appkitMetadata } from "@/lib/config";
 import { projectId } from "@/lib/config";
-import { ParticipantsResponse, useCampaignParticipants } from "./useMyShops";
+import { useCampaignParticipants } from "./useMyShops";
 import { endCampaign } from "./useCampaigns";
 
 export const TOKENDECIMALS = 100;
@@ -34,16 +35,19 @@ export interface Participant {
 
 export function useAssociate(tokenId: string | undefined) {
   const { address } = useAppKitAccount();
+  const [isPending, setIsPending] = useState(false);
 
-  const { mutate: associate, isPending } = useMutation({
-    mutationFn: async () => await associateToken(tokenId, address),
-    onSuccess: () => {
+  const associate = async () => {
+    setIsPending(true);
+    try {
+      await associateToken(tokenId, address);
       toast.success("Token associated successfully");
-    },
-    onError: () => {
+    } catch (error) {
       toast.error("Failed to associate token");
-    },
-  });
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return {
     associate,
@@ -100,36 +104,45 @@ export async function associateToken(
 
 export function useAirdropTokens(campaignId: string, accountId: string | null) {
   const { data } = useCampaignParticipants(campaignId);
-  let totalAirDropAmount = 0;
-  if (data && accountId) {
-    totalAirDropAmount = data?.campaign.distributed
-      ? data?.campaign.distributed / data?.participants.length / 10
-      : 0;
-  }
+  const [isPending, setIsPending] = useState(false);
+  const [airdropData, setAirdropData] = useState<any>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const {
-    mutate: airdropTokens,
-    isPending,
-    data: airdropData,
-    isSuccess,
-  } = useMutation({
-    mutationFn: () => {
-      if (!data || !accountId) {
-        throw new Error("Missing data or account ID");
-      }
-      return airDropTokens(data.participants, accountId, totalAirDropAmount);
-    },
-    onSuccess: async (data) => {
+  const airdropTokens = async () => {
+    if (!data || !accountId) {
+      toast.error("Missing data or account ID");
+      return;
+    }
+
+    setIsPending(true);
+    setIsSuccess(false);
+    setAirdropData(null);
+
+    try {
+      const totalAirDropAmount = data?.campaign.distributed
+        ? data?.campaign.distributed / data?.participants.length / 10
+        : 0;
+
+      const result = await airDropTokens(
+        data.participants,
+        accountId,
+        totalAirDropAmount
+      );
+
+      setAirdropData(result);
+      setIsSuccess(true);
       toast.success("Tokens airdropped successfully");
-      console.log("data:", data);
+
+      // End campaign after successful airdrop
       await endCampaign(campaignId);
       toast.success("Campaign ended successfully");
-    },
-    onError: (error: any) => {
+    } catch (error) {
       toast.error("Failed to airdrop tokens");
       console.log(error);
-    },
-  });
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return {
     airdropTokens,
@@ -143,20 +156,15 @@ export async function airDropTokens(
   participants: Participant[],
   accountId: string,
   airdropAmount: number
-): Promise<string> {
+): Promise<SignAndExecuteTransactionResult> {
   if (participants.length === 0) {
     toast.error("No participants found");
-    return "No participants found";
+    throw new Error("No participants found");
   }
   if (airdropAmount <= 0) {
     toast.error("Airdrop amount must be greater than 0");
-    return "Airdrop amount must be greater than 0";
+    throw new Error("Airdrop amount must be greater than 0");
   }
-
-  console.log("airdropAmount:", airdropAmount);
-  console.log("participants:", participants);
-  console.log("accountId:", accountId);
-  console.log("tokenId:", tokenId);
 
   const dAppConnector = new DAppConnector(
     appkitMetadata,
@@ -194,13 +202,7 @@ export async function airDropTokens(
 
   console.log("Airdrop Result:", result);
 
-  const receiptQuery = new TransactionReceiptQuery().setTransactionId(
-    transactionId
-  );
-  const receipt = await receiptQuery.executeWithSigner(signer);
-  const status = receipt.status;
-
-  return status.toString();
+  return result;
 }
 
 export const formatAccountId = (accountId: string) => {

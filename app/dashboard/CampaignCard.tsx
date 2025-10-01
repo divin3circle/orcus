@@ -28,9 +28,6 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
     campaign.id,
     formatAccountId(accountId || "")
   );
-  console.log("airdropData:", airdropData);
-  console.log("isSuccess:", isSuccess);
-  console.log("isPending:", isPending);
 
   const progressPercentage = () => {
     const percentage = campaign.distributed / (campaign.target / 100);
