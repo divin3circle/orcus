@@ -314,38 +314,37 @@ func (sh *ShopHandler) HandlerGetCampaignParticipants(w http.ResponseWriter, r *
 }
 
 func (sh *ShopHandler) HandlerEndCampaign(w http.ResponseWriter, r *http.Request) {
-	campaignID, err := utils.ReadIDParam(r, "id")
-	if err != nil {
-		sh.Logger.Printf("ERROR: error getting campaign by id ReadIDParam: %v", err)
-		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
-		return
-	}
-	sh.Logger.Printf("INFO: ending campaign: %s", campaignID)
+    campaignID, err := utils.ReadIDParam(r, "id")
+    if err != nil {
+        sh.Logger.Printf("ERROR: error getting campaign by id ReadIDParam: %v", err)
+        utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+        return
+    }
+    err = sh.ShopStore.EndCampaign(campaignID)
+    if err != nil {
+        sh.Logger.Printf("ERROR: error ending campaign EndCampaign: %v", err)
+        utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+        return
+    }
+    utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign ended successfully"})
 
-	participants, err := sh.ShopStore.GetCampaignParticipants(campaignID)
-	if err != nil {
-		sh.Logger.Printf("ERROR: error getting campaign participants GetCampaignParticipants: %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
-		return
-	}
+    go func() {
+        participants, err := sh.ShopStore.GetCampaignParticipants(campaignID)
+        if err != nil {
+            sh.Logger.Printf("ERROR: error getting campaign participants: %v", err)
+            return
+        }
 
-	for _, participant := range participants {
-		user, err := sh.UserStore.GetUserByID(participant.UserID)
-		if err != nil {
-			sh.Logger.Printf("ERROR: error getting user by id GetUserByID: %v", err)
-			utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
-			return
-		}
-		sh.Logger.Printf("INFO: notifying user: %s", user.TopicID)
-		NotifyUser(w, user.TopicID, "airdrop", sh.Client)
-	}
-
-	err = sh.ShopStore.EndCampaign(campaignID)
-	if err != nil {
-		sh.Logger.Printf("ERROR: error ending campaign EndCampaign: %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
-		return
-	}
+        for _, participant := range participants {
+            user, err := sh.UserStore.GetUserByID(participant.UserID)
+            if err != nil {
+                sh.Logger.Printf("ERROR: error getting user by id: %v", err)
+                continue
+            }
+            NotifyUser(w, user.TopicID, "airdrop", sh.Client)
+			sh.Logger.Printf("INFO: notifying user: %s", user.TopicID)
+        }
+    }()
 }
 
 
