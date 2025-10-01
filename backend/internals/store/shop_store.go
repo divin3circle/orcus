@@ -50,6 +50,7 @@ type ShopStore interface {
 	GetUserCampaignEntryByShopID(shopID string) ([]*UserCampaignEntry, error)
 	GetCampaignParticipants(campaignID string) ([]*UserCampaignEntry, error)
 	EndCampaign(campaignID string) error
+	IsCampaignEnded(campaignID string) (bool, error)
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -405,4 +406,20 @@ func (pg *PostgresShopStore) EndCampaign(campaignID string) error {
 		return err
 	}
 	return nil
+}
+
+func (pg *PostgresShopStore) IsCampaignEnded(campaignID string) (bool, error) {
+	query := `
+	SELECT ended, distributed, target_tokens
+	FROM campaigns
+	WHERE id = $1
+	`
+	var ended int64
+	var distributed int64
+	var target int64
+	err := pg.db.QueryRow(query, campaignID).Scan(&ended, &distributed, &target)
+	if err != nil {
+		return false, err
+	}
+	return ended == 1 && distributed == target / 100, nil
 }

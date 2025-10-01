@@ -252,6 +252,17 @@ func (uh *UserHandler) HandleJoinCampaign(w http.ResponseWriter, r *http.Request
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+	isEnded, err := uh.ShopStore.IsCampaignEnded(req.CampaignID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error checking if campaign is ended in IsCampaignEnded: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	if isEnded {
+		uh.Logger.Printf("ERROR: error campaign is ended in IsCampaignEnded: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "Campaign is ended"})
+		return
+	}
 	user, err := uh.UserStore.GetUserByID(req.UserID)
 	if user == nil {
 		uh.Logger.Printf("ERROR: error getting user by id in GetUserByID: %v", err)
@@ -320,6 +331,17 @@ func (uh *UserHandler) HandleUpdateCampaignEntry(w http.ResponseWriter, r *http.
 	if err != nil {
 		uh.Logger.Printf("ERROR: error getting campaign by id in GetCampaignByID: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	isEnded, err := uh.ShopStore.IsCampaignEnded(req.CampaignID)
+	if err != nil {
+		uh.Logger.Printf("ERROR: error checking if campaign is ended in IsCampaignEnded: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	if isEnded {
+		uh.Logger.Printf("ERROR: error campaign is ended in IsCampaignEnded: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "Campaign is ended"})
 		return
 	}
 	user, err := uh.UserStore.GetUserByUsername(req.Username)

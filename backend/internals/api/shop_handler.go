@@ -328,6 +328,7 @@ func (sh *ShopHandler) HandlerEndCampaign(w http.ResponseWriter, r *http.Request
     }
     utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "Campaign ended successfully"})
 
+	// TODO: Can be improved by use of message queue
     go func() {
         participants, err := sh.ShopStore.GetCampaignParticipants(campaignID)
         if err != nil {
