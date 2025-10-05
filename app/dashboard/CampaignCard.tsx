@@ -157,7 +157,7 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
                         {isParticipantsLoading ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          participants?.participants?.length
+                          participants?.participants?.length || 0
                         )}
                         <IconUsers className="size-4" />
                       </p>

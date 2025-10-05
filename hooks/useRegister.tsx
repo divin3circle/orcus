@@ -29,10 +29,7 @@ export const useRegister = () => {
   return useMutation<RegisterResponse, Error, RegisterData>({
     mutationFn: registerUser,
     onSuccess: (data) => {
-      toast.success("Registration successful!", {
-        description: "Your account has been created successfully.",
-        descriptionClassName: "text-black",
-      });
+      toast.success("Registration successful!");
       router.push("/login");
     },
     onError: (error) => {

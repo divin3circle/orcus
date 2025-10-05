@@ -19,7 +19,7 @@ function Balance() {
   };
 
   return (
-    <div className="border border-foreground/30 rounded-xl h-auto md:h-[45%] p-4">
+    <div className="border border-foreground/30 rounded-xl h-auto xl:h-[45%] p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl md:text-2xl font-semibold">Balance</h1>
         <Button

@@ -5,7 +5,12 @@ import merchantHero from "@/public/businesshero.png";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { useCustomerStore } from "@/lib/store";
-import { IconBrandApple, IconBrandGooglePlay } from "@tabler/icons-react";
+import {
+  IconBrandApple,
+  IconBrandGooglePlay,
+  IconGlobe,
+  IconWebhook,
+} from "@tabler/icons-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 
@@ -76,14 +81,14 @@ const CustomerHero = () => {
             className="w-full md:w-1/2 not-first:flex items-center gap-2"
           >
             <IconBrandGooglePlay />
-            <span>Download On Google Play</span>
+            <span>Download On Play Store</span>
           </Button>
           <Button
             variant="default"
             className="w-full md:w-1/2 flex items-center gap-2 bg-transparent border-[1px] border-border/50 hover:bg-foreground/50 hover:border-border/50 "
           >
-            <IconBrandApple />
-            <span>Download On Apple Store</span>
+            <IconWebhook />
+            <span>Web Access</span>
           </Button>
         </div>
       </div>

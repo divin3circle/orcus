@@ -95,9 +95,7 @@ export const useCreateShop = () => {
     mutationFn: (shopData: CreateShopRequest) => createShop(shopData),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["myShops"] });
-      toast.success("Shop created successfully!", {
-        descriptionClassName: "text-black",
-      });
+      toast.success("Shop created successfully!");
       router.push("/dashboard");
     },
     onError: (error: any) => {

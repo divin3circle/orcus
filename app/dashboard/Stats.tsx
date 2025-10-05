@@ -25,7 +25,7 @@ function Stats() {
     return <div>Error: {error.message}</div>;
   }
   return (
-    <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-[55%] flex flex-col-reverse md:flex-row justify-between w-full">
+    <div className="border border-foreground/30 rounded-xl p-2 h-auto xl:h-[55%] flex flex-col-reverse md:flex-row justify-between w-full">
       <div className="md:w-1/2 md:border-r border-foreground/30  h-full">
         <div className="border-b border-foreground/30 pb-4 h-1/2 w-full">
           <div className="px-2">
