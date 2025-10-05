@@ -32,10 +32,7 @@ export const useLogin = () => {
     onSuccess: (data) => {
       // Store the auth data (merchant_id and token) using the auth context
       login(data);
-      toast.success("Login successful!", {
-        description: "Welcome back to Orcus.",
-        descriptionClassName: "text-black",
-      });
+      toast.success("Login successful!");
       router.push("/dashboard");
     },
     onError: (error) => {

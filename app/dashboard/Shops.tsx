@@ -25,8 +25,8 @@ function Shops() {
     );
   }
   return (
-    <div className="border border-foreground/30 rounded-xl p-2 h-auto md:h-[55%]">
-      <div className="flex justify-between items-center mt-1 mb-2">
+    <div className="border border-foreground/30 rounded-xl p-2 h-auto xl:h-[55%] pb-4 xl:pb-0">
+      <div className="flex justify-between items-center mt-1 mb-4 xl:mb-2">
         <h1 className="text-base font-semibold">My Shops</h1>
         <Link
           href="/shops"
@@ -35,7 +35,7 @@ function Shops() {
           View All
         </Link>
       </div>
-      <div className="flex flex-col gap-2 mt-3">
+      <div className="flex flex-col gap-4 xl:gap-1 mt-4 xl:mt-0">
         {shops.slice(0, 2).map((shop) => (
           <ShopCard key={shop.id} shop={shop} />
         ))}

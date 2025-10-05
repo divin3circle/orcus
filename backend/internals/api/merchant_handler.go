@@ -216,6 +216,8 @@ func NotifyMerchant(w http.ResponseWriter, topicID string, messageType string, c
 	switch messageType {
 	case "transaction":
 		messageContent = "Payment received"
+	case "airdrop":
+		messageContent = "KSH Token airdropped successfully"
 	case "withdrawal":
 		messageContent = "Withdrawal completed"
 	case "shop_created":

@@ -19,6 +19,15 @@ const hederaTestnet: CustomCaipNetwork<"hedera"> = {
 
 export const networks = [hederaTestnet] as [AppKitNetwork, ...AppKitNetwork[]];
 
+export const appkitMetadata = {
+  name: "Orcus",
+  description: "Orcus",
+  url: "https://orcus.com/",
+  icons: [
+    "https://raw.githubusercontent.com/divin3circle/orcus/refs/heads/main/public/favicon.ico",
+  ],
+};
+
 export async function getUniversalConnector() {
   const universalConnector = await UniversalConnector.init({
     projectId,

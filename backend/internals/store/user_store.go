@@ -10,6 +10,7 @@ import (
 type User struct {
 	ID              string    `json:"id"`
 	Username        string    `json:"username"`
+	TopicID         string    `json:"topic_id"`
 	MobileNumber    string    `json:"mobile_number"`
 	PasswordHash    password  `json:"-"`
 	EncryptedKey    string    `json:"-"`
@@ -31,7 +32,8 @@ type Purchase struct {
 
 type UserCampaignEntry struct {
 	ID string `json:"id"`
-	ShopID string `json:"shop_id"`
+	ShopID sql.NullString `json:"shop_id"`
+	UserID string `json:"user_id"`
 	CampaignID string `json:"campaign_id"`
 	TokenBalance int64 `json:"token_balance"`
 }
@@ -53,6 +55,7 @@ func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
 type UserStore interface {
 	CreateUser(user *User) (*User, error)
 	GetUserByUsername(username string) (*User, error)
+	GetUserByID(id string) (*User, error)
 	UpdateUser(user *User) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
 	BuyToken(userID string, amount int64) error
@@ -65,12 +68,12 @@ type UserStore interface {
 
 func (pu *PostgresUserStore) CreateUser(user *User) (*User, error) {
 	query := `
-	INSERT INTO users (username, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	INSERT INTO users (username, topic_id, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id, created_at, updated_at;
 	`
 
-	err := pu.db.QueryRow(query, user.Username, user.MobileNumber, user.PasswordHash.hash, user.EncryptedKey, user.AccountID, user.ProfileImageUrl).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+	err := pu.db.QueryRow(query, user.Username, user.TopicID, user.MobileNumber, user.PasswordHash.hash, user.EncryptedKey, user.AccountID, user.ProfileImageUrl).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +86,31 @@ func (pu *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 
 	query := `
-	SELECT id, username, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
+	SELECT id, username, topic_id, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
 	FROM users
 	WHERE username = $1
 	`
-	err := pu.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
+	err := pu.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.TopicID, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (pu *PostgresUserStore) GetUserByID(id string) (*User, error) {
+	user := &User{
+		PasswordHash: password{},
+	}
+	
+	query := `
+	SELECT id, username, topic_id, mobile_number, hashed_password, encrypted_key, account_id, profile_image_url, created_at, updated_at
+	FROM users
+	WHERE id = $1
+	`
+	err := pu.db.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.TopicID, &user.MobileNumber, &user.PasswordHash.hash, &user.EncryptedKey, &user.AccountID, &user.ProfileImageUrl, &user.CreatedAt, &user.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -182,22 +205,49 @@ func (pu *PostgresUserStore) JoinCampaign(userID string, campaignID string, toke
 	if isParticipant {
 		return errors.New("user is already participating in this campaign")
 	}
+	
+	tx, err := pu.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	
 	query := `
 	INSERT INTO campaigns_entry (user_id, campaign_id, token_balance)
 	VALUES ($1, $2, $3)
 	`
-	_, err = pu.db.Exec(query, userID, campaignID, tokenBalance)
-	return err
+	_, err = tx.Exec(query, userID, campaignID, tokenBalance)
+	if err != nil {
+		return err
+	}
+	
+	updateQuery := `
+	UPDATE campaigns 
+	SET distributed = distributed + $1 
+	WHERE id = $2
+	`
+	_, err = tx.Exec(updateQuery, tokenBalance, campaignID)
+	if err != nil {
+		return err
+	}
+	
+	return tx.Commit()
 }
 
 func (pg *PostgresUserStore) UpdateCampaignEntry(userID string, campaignID string, tokenIncrement int64) error {
+    tx, err := pg.db.Begin()
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()
+    
     query := `
         UPDATE campaigns_entry 
         SET token_balance = token_balance + $1 
         WHERE user_id = $2 AND campaign_id = $3
     `
     
-    result, err := pg.db.Exec(query, tokenIncrement, userID, campaignID)
+    result, err := tx.Exec(query, tokenIncrement, userID, campaignID)
     if err != nil {
         return err
     }
@@ -211,7 +261,17 @@ func (pg *PostgresUserStore) UpdateCampaignEntry(userID string, campaignID strin
         return errors.New("no campaign entry found for user")
     }
     
-    return nil
+    updateQuery := `
+        UPDATE campaigns 
+        SET distributed = distributed + $1 
+        WHERE id = $2
+    `
+    _, err = tx.Exec(updateQuery, tokenIncrement, campaignID)
+    if err != nil {
+        return err
+    }
+    
+    return tx.Commit()
 }
 
 func (pu *PostgresUserStore) IsParticipant(userID string, campaignID string) (bool, error) {
@@ -228,7 +288,7 @@ func (pu *PostgresUserStore) IsParticipant(userID string, campaignID string) (bo
 
 func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*UserCampaignEntry, error) {
 	query := `
-	SELECT id, shop_id, campaign_id, token_balance
+	SELECT id, shop_id, user_id, campaign_id, token_balance
 	FROM campaigns_entry
 	WHERE user_id = $1
 	`
@@ -241,7 +301,7 @@ func (pu *PostgresUserStore) GetUserCampaigns(userID string) ([]*UserCampaignEnt
 	result := []*UserCampaignEntry{}
 	for campaigns.Next() {
 		var campaign UserCampaignEntry
-		err = campaigns.Scan(&campaign.ID, &campaign.ShopID, &campaign.CampaignID, &campaign.TokenBalance)
+		err = campaigns.Scan(&campaign.ID, &campaign.ShopID, &campaign.UserID, &campaign.CampaignID, &campaign.TokenBalance)
 		if err != nil {
 			return nil, err
 		}

@@ -50,7 +50,7 @@ function Withdraw() {
           </div>
         ))}
       </div>
-      <Tabs defaultValue="wallet" className="w-full mt-8">
+      <Tabs defaultValue="wallet" className="w-full mt-4">
         <TabsList className="w-full">
           <TabsTrigger
             value="wallet"

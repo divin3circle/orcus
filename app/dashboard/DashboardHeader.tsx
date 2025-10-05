@@ -28,6 +28,7 @@ function DashboardHeader() {
     accountId,
     isLoading: isWalletLoading,
     disconnect,
+    connect,
   } = useWallet();
   const {
     data: notifications,
@@ -46,6 +47,14 @@ function DashboardHeader() {
     return <div>Error: {error?.message}</div>;
   }
 
+  const handleWalletConnect = async () => {
+    if (!isConnected) {
+      await connect();
+    } else {
+      await disconnect();
+    }
+  };
+
   return (
     <div className="w-full flex items-center justify-between mt-4">
       <div className="flex items-center gap-1 px-2">
@@ -56,6 +65,7 @@ function DashboardHeader() {
       </div>
       <div className="flex items-center gap-2">
         <Button
+          onClick={handleWalletConnect}
           variant={"outline"}
           className="bg-transparent border-[1px] shadow-none hover:bg-foreground/5 border-foreground/50  rounded-full text-foreground hidden md:block"
         >
@@ -98,7 +108,7 @@ function DashboardHeader() {
                   <Loader2 className="w-5 h-5 mt-8 animate-spin" />
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 mt-4 md:w-[500px] w-full mx-auto my-0">
+                <div className="flex flex-col-reverse gap-2 mt-4 md:w-[500px] w-full mx-auto my-0">
                   {notifications?.slice(0, 5).map((notification) => (
                     <NotificationCard
                       key={notification.timestamp}

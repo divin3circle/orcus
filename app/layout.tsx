@@ -25,6 +25,10 @@ const montserratAlternates = Montserrat_Alternates({
 export const metadata: Metadata = {
   title: "Orcus",
   description: "Making payments simple, stable, everywhere.",
+  icons: {
+    icon: "/favicon.ico",
+  },
+  metadataBase: new URL("https://orcus.com"),
 };
 
 export default function RootLayout({

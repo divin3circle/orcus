@@ -44,9 +44,13 @@ type ShopStore interface {
 	UpdateShop(*Shop) error
 	GetShopOwner(id string) (string, error)
 	GetShopCampaigns(id string) ([]*CampaignEntry, error)
+	GetShopCampaignByCampaignID(campaignID string) (*CampaignEntry, error)
 	GetShopsByMerchantID(merchantID string) ([]*Shop, error)
 	GetShopCampaignsByShopID(shopID string) ([]*CampaignEntry, error)
 	GetUserCampaignEntryByShopID(shopID string) ([]*UserCampaignEntry, error)
+	GetCampaignParticipants(campaignID string) ([]*UserCampaignEntry, error)
+	EndCampaign(campaignID string) error
+	IsCampaignEnded(campaignID string) (bool, error)
 }
 
 func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
@@ -96,11 +100,11 @@ func (pg *PostgresShopStore) CreateShop(shop *Shop) (*Shop, error) {
 func (pg *PostgresShopStore) GetShopByID(id string) (*Shop, error) {
 	shop := &Shop{}
 	query := `
-	SELECT id, name, theme, payment_id, profile_image_url
+	SELECT id, name, theme, payment_id, profile_image_url, merchant_id
 	FROM shops
 	WHERE id = $1
 	`
-	err := pg.db.QueryRow(query, id).Scan(&shop.ID, &shop.Name, &shop.Theme, &shop.PaymentID, &shop.ProfileImageUrl)
+	err := pg.db.QueryRow(query, id).Scan(&shop.ID, &shop.Name, &shop.Theme, &shop.PaymentID, &shop.ProfileImageUrl, &shop.MerchantID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -347,4 +351,75 @@ func (pg *PostgresShopStore) GetShopCampaignsByShopID(shopID string) ([]*Campaig
 		result = append(result, &campaign)
 	}
 	return result, nil
+}
+
+func (pg *PostgresShopStore) GetShopCampaignByCampaignID(campaignID string) (*CampaignEntry, error) {
+	campaign := &CampaignEntry{}
+	query := `
+	SELECT id, name, token_id, description, target_tokens, distributed, ended, icon, banner_image_url, shop_id
+	FROM campaigns
+	WHERE id = $1
+	`
+	err := pg.db.QueryRow(query, campaignID).Scan(&campaign.ID, &campaign.Name, &campaign.TokenID, &campaign.Description, &campaign.Target, &campaign.Distributed, &campaign.Ended, &campaign.Icon, &campaign.BannerImageUrl, &campaign.ShopID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return campaign, nil
+}
+
+func (pg *PostgresShopStore) GetCampaignParticipants(campaignID string) ([]*UserCampaignEntry, error) {
+	query := `
+	SELECT id, user_id, campaign_id, token_balance
+	FROM campaigns_entry
+	WHERE campaign_id = $1
+	`
+	campaigns, err := pg.db.Query(query, campaignID)
+	if err != nil {
+		return nil, err
+	}
+	defer campaigns.Close()
+
+	result := []*UserCampaignEntry{}
+	for campaigns.Next() {
+		var campaign UserCampaignEntry
+		err = campaigns.Scan(&campaign.ID, &campaign.UserID, &campaign.CampaignID, &campaign.TokenBalance)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &campaign)
+	}
+	return result, nil
+}
+
+func (pg *PostgresShopStore) EndCampaign(campaignID string) error {
+	query := `
+	UPDATE campaigns
+	SET ended = 1
+	WHERE id = $1
+	`
+	_, err := pg.db.Exec(query, campaignID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pg *PostgresShopStore) IsCampaignEnded(campaignID string) (bool, error) {
+	query := `
+	SELECT ended, distributed, target_tokens
+	FROM campaigns
+	WHERE id = $1
+	`
+	var ended int64
+	var distributed int64
+	var target int64
+	err := pg.db.QueryRow(query, campaignID).Scan(&ended, &distributed, &target)
+	if err != nil {
+		return false, err
+	}
+	return ended == 1 && distributed == target / 100, nil
 }

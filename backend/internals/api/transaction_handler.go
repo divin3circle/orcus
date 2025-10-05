@@ -20,7 +20,6 @@ const (
 type TransactionRequest struct {
 	ShopID     string `json:"shop_id"`
 	Username   string `json:"username"`
-	MerchantID string `json:"merchant_id"`
 	Amount     int64  `json:"amount"`
 }
 
@@ -35,12 +34,13 @@ type TransactionHandler struct {
 	TransactionStore store.TransactionStore
 	UserStore        store.UserStore
 	MerchantStore    store.MerchantStore
+	ShopStore        store.ShopStore
 	Logger           *log.Logger
 	Client           *hiero.Client
 }
 
-func NewTransactionHandler(transactionStore store.TransactionStore, userStore store.UserStore, merchantStore store.MerchantStore, logger *log.Logger, client *hiero.Client) *TransactionHandler {
-	return &TransactionHandler{TransactionStore: transactionStore, UserStore: userStore, Client: client, MerchantStore: merchantStore, Logger: logger}
+func NewTransactionHandler(transactionStore store.TransactionStore, userStore store.UserStore, merchantStore store.MerchantStore, shopStore store.ShopStore, logger *log.Logger, client *hiero.Client) *TransactionHandler {
+	return &TransactionHandler{TransactionStore: transactionStore, UserStore: userStore, Client: client, MerchantStore: merchantStore, Logger: logger, ShopStore: shopStore}
 }
 
 func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +89,19 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		return
 	}
 
-	merchant, err := th.MerchantStore.GetMerchantByID(transactionRequest.MerchantID)
+	shop, err := th.ShopStore.GetShopByID(transactionRequest.ShopID)
+	if err != nil {
+		th.Logger.Printf("ERROR: error getting shop: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
+		return
+	}
+	if shop == nil {
+		th.Logger.Printf("ERROR: error getting shop: %v", err)
+		utils.WriteJSON(w, http.StatusNotFound, utils.Envelope{"error": "shop not found"})
+		return
+	}
+
+	merchant, err := th.MerchantStore.GetMerchantByID(shop.MerchantID)
 	if err != nil {
 		th.Logger.Printf("ERROR: error getting merchant: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
@@ -102,6 +114,8 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		return
 	}
 
+	fees := calculateFeesInKsh(transactionRequest.Amount)
+
 	// use decrypted the key and sign the hedera transaction with it to transfer funds to the merchant
 	tokenId, err := hiero.TokenIDFromString(os.Getenv("KSH_TOKEN_ID"))
 	if err != nil {
@@ -109,6 +123,16 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": err.Error()})
 		return
 	}
+
+	// check if the user has enough tokens
+	err = th.checkTokenBalance(userAccountID, tokenId, float64(transactionRequest.Amount + parseFeesToInt64(fees)))
+	if err != nil {
+		th.Logger.Printf("ERROR: error checking token balance: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+		return
+	}
+
+
 	amount := transactionRequest.Amount * TOKENDECIMALS
 
 	tokenTransferTransaction, err := hiero.NewTransferTransaction().
@@ -128,7 +152,7 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 		return
 	}
 
-	fees := calculateFeesInKsh(transactionRequest.Amount)
+	
 
 	tokenFeeTransaction, err := hiero.NewTransferTransaction().
 		AddTokenTransfer(tokenId, userAccountID, -parseFeesToInt64(fees)).
@@ -152,7 +176,7 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 	transaction.Fee = parseFeesToInt64(fees)
 	transaction.Amount = transactionRequest.Amount * TOKENDECIMALS
 	transaction.Status = "completed"
-	transaction.MerchantID = transactionRequest.MerchantID
+	transaction.MerchantID = shop.MerchantID
 	transaction.ShopID = transactionRequest.ShopID
 	transaction.UserID = currentUser.ID
 
@@ -171,6 +195,7 @@ func (th *TransactionHandler) HandleCreateTransaction(w http.ResponseWriter, r *
 	}
 
 	NotifyMerchant(w, merchant.TopicID, "transaction", th.Client)
+	NotifyUser(w, currentUser.TopicID, "transaction", th.Client)
 
 	utils.WriteJSON(w, http.StatusCreated, utils.Envelope{"data": successfulTxn})
 }
@@ -248,9 +273,6 @@ func (th *TransactionHandler) validateTransactionRequest(transactionRequest *Tra
 	if transactionRequest.Username == "" {
 		return errors.New("user id is required")
 	}
-	if transactionRequest.MerchantID == "" {
-		return errors.New("merchant id is required")
-	}
 	if transactionRequest.Amount <= 0 {
 		return errors.New("amount is required")
 	}
@@ -263,6 +285,28 @@ func calculateFeesInKsh(amount int64) float64 {
 	} else {
 		return 0.005 * float64(amount)
 	}
+}
+
+func (th *TransactionHandler) checkTokenBalance(accountID hiero.AccountID, tokenId hiero.TokenID, amount float64) error {
+	balanceQuery := hiero.NewAccountBalanceQuery().
+	SetAccountID(accountID)
+
+	balanceResponse, err := balanceQuery.Execute(th.Client)
+	if err != nil {
+		th.Logger.Printf("ERROR: error getting balance: %v", err)
+		return err
+	}
+
+	accountBalance := float64(balanceResponse.Tokens.Get(tokenId)) / 100
+
+	th.Logger.Printf("Account balance: %f", accountBalance)
+	th.Logger.Printf("Amount: %f", amount)
+
+	if accountBalance < amount {
+		return errors.New("insufficient balance")
+	}
+
+	return nil
 }
 
 func parseFeesToInt64(amount float64) int64 {

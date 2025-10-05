@@ -430,7 +430,7 @@ function Success({ createdCampaign }: { createdCampaign: any }) {
 
   const handleViewCampaign = () => {
     if (campaignId) {
-      router.back();
+      router.push(`/shops`);
     }
   };
 
