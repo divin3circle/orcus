@@ -39,12 +39,12 @@ function Withdraw() {
           KES {formatBalance(calculateWithdrawalLimit())}
         </p>
       </div>
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-4 gap-2">
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
             onClick={() => setAmount(calculateWithdrawalAmount(index))}
-            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md size-[78px]"
+            className="flex items-center cursor-pointer hover:bg-foreground/10 transition-all duration-300 justify-center col bg-foreground/5 font-semibold rounded-md w-[25%] h-[64px]"
           >
             {(index + 1) * 25}%
           </div>

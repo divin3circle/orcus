@@ -18,8 +18,10 @@ function ShopCards() {
   }
   if (shops?.length === 0 || !shops) {
     return (
-      <div className="mt-12 w-full flex items-center justify-center h-full">
-        <p className="text-sm text-foreground/50">No shops found</p>
+      <div className="xl:mt-12 w-full flex items-center justify-center h-full">
+        <p className="text-sm text-foreground/50 hidden xl:block">
+          No shops found
+        </p>
       </div>
     );
   }
