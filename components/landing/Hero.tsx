@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import appIcon from "@/public/mockApp.png";
+import appIcon from "@/public/app1.png";
 import merchantHero from "@/public/businesshero.png";
 import Image from "next/image";
 import { Button } from "../ui/button";
@@ -96,9 +96,9 @@ const CustomerHero = () => {
         <Image
           src={appIcon}
           alt="appIcon"
-          width={400}
-          height={400}
-          className="transform rotate-12 hover:rotate-6 transition-transform duration-300 ease-in-out h-[500px] w-[310px] md:h-[550px] md:w-[350px] "
+          width={300}
+          height={300}
+          className="transform rotate-12 hover:rotate-6 transition-transform duration-300 ease-in-out h-[450px] w-[210px] md:h-[550px] md:w-[300px] rounded-3xl "
           style={{
             transform: "rotateY(15deg) rotateZ(12deg)",
             transformStyle: "preserve-3d",
