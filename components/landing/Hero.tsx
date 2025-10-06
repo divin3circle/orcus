@@ -92,13 +92,13 @@ const CustomerHero = () => {
           </Button>
         </div>
       </div>
-      <div className="w-full md:w-1/2 flex justify-center">
+      <div className="w-1/2 flex justify-center">
         <Image
           src={appIcon}
           alt="appIcon"
           width={300}
           height={300}
-          className="transform rotate-12 hover:rotate-6 transition-transform duration-300 ease-in-out h-[100px] w-[40px] md:h-[550px] md:w-[300px] rounded-3xl "
+          className="transform rotate-12 hover:rotate-6 transition-transform duration-300 ease-in-out md:h-[550px] md:w-[300px] rounded-3xl "
           style={{
             transform: "rotateY(15deg) rotateZ(12deg)",
             transformStyle: "preserve-3d",
