@@ -1,5 +1,5 @@
 FROM node:18-alpine AS deps
-RUN curl -fsSL https://get.pnpm.io/install.sh | sh -
+RUN npm install -g pnpm
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
