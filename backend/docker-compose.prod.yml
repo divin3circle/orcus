@@ -1,11 +1,11 @@
 services:
   db:
-    container_name: "orcusDB"
+    container_name: "orcusProdDB"
     image: postgres:12.4-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
