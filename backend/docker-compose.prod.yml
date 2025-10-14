@@ -33,6 +33,10 @@ services:
       # Hiero configuration
       OPERATOR_ACCOUNT_ID: ${OPERATOR_ACCOUNT_ID}
       OPERATOR_KEY: ${OPERATOR_KEY}
+      OPERATOR_PUBLIC_KEY: ${OPERATOR_PUBLIC_KEY}
+      OPERATOR_HEX_KEY: ${OPERATOR_HEX_KEY}
+      # Token configuration
+      KSH_TOKEN_ID: ${KSH_TOKEN_ID}
     depends_on:
       db:
         condition: service_healthy

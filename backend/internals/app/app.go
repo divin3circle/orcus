@@ -39,10 +39,10 @@ func loadEnvironmentVariables() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		fmt.Println("No .env file found (using environment variables from system)")
+	} else {
+		fmt.Println("Environment variables loaded from .env file")
 	}
-
-	fmt.Println("Environment variables loaded successfully")
 }
 
 func NewApplication() (*Application, error) {
