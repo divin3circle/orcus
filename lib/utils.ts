@@ -5,6 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const localUrl = "http://localhost:8080";
+const prodUrl = "https://backend.orcus-finance.space";
+
+const isDev = false;
+
 export const countries = [
   {
     id: 1,
@@ -63,4 +68,4 @@ export const countries = [
     shortCode: "ET",
   },
 ];
-export const BASE_URL = "http://localhost:8080";
+export const BASE_URL = isDev ? localUrl : prodUrl;
