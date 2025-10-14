@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: "orcusDB"
+    image: postgres:12.4-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orcus-network
+
+  backend:
+    container_name: "orcusBackend"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Database connection
+      DB_URL: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-postgres}?sslmode=disable"
+      PORT: 8080
+      # Hiero configuration
+      OPERATOR_ACCOUNT_ID: ${OPERATOR_ACCOUNT_ID}
+      OPERATOR_KEY: ${OPERATOR_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - orcus-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  orcus-network:
+    driver: bridge
