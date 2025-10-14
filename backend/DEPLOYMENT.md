@@ -36,10 +36,10 @@ EOF
 
 ```bash
 # Build and start in detached mode
-docker-compose -f docker-compose.prod.yml up -d --build
+sudo docker compose -f sudo docker compose.prod.yml up -d --build
 
 # View logs
-docker-compose -f docker-compose.prod.yml logs -f
+sudo docker compose -f sudo docker compose.prod.yml logs -f
 ```
 
 ### 4. Verify Deployment
@@ -60,36 +60,36 @@ docker exec -it orcusDB psql -U orcus_user -d orcus_prod
 ### Stop Services
 
 ```bash
-docker-compose -f docker-compose.prod.yml down
+sudo docker compose -f sudo docker compose.prod.yml down
 ```
 
 ### Stop and Remove Data (CAUTION!)
 
 ```bash
-docker-compose -f docker-compose.prod.yml down -v
+sudo docker compose -f sudo docker compose.prod.yml down -v
 ```
 
 ### View Logs
 
 ```bash
 # All services
-docker-compose -f docker-compose.prod.yml logs -f
+sudo docker compose -f sudo docker compose.prod.yml logs -f
 
 # Specific service
-docker-compose -f docker-compose.prod.yml logs -f backend
+sudo docker compose -f sudo docker compose.prod.yml logs -f backend
 ```
 
 ### Restart Services
 
 ```bash
-docker-compose -f docker-compose.prod.yml restart
+sudo docker compose -f sudo docker compose.prod.yml restart
 ```
 
 ### Update Deployment
 
 ```bash
 git pull
-docker-compose -f docker-compose.prod.yml up -d --build
+sudo docker compose -f sudo docker compose.prod.yml up -d --build
 ```
 
 ## Database Backups
@@ -117,7 +117,7 @@ docker stats
 ### Container Health
 
 ```bash
-docker-compose -f docker-compose.prod.yml ps
+sudo docker compose -f sudo docker compose.prod.yml ps
 ```
 
 ## Troubleshooting
@@ -136,7 +136,7 @@ docker-compose -f docker-compose.prod.yml ps
 
 ### Port Already in Use
 
-Change ports in `docker-compose.prod.yml`:
+Change ports in `sudo docker compose.prod.yml`:
 
 ```yaml
 ports:
@@ -157,7 +157,7 @@ ports:
 If you want to add HTTPS and a domain:
 
 ```yaml
-# Add to docker-compose.prod.yml
+# Add to sudo docker compose.prod.yml
 nginx:
   image: nginx:alpine
   ports:
