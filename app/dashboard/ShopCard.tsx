@@ -37,12 +37,12 @@ function ShopCard({ shop }: { shop: MyShop }) {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Image
+          <img
             src={shop.profile_image_url}
             alt={shop.name}
             width={36}
             height={36}
-            className="rounded-full object-cover"
+            className="rounded-full"
           />
           <Link href={`/shops/${shop.id}`}>
             <h1 className="text-base font-semibold text-background">
