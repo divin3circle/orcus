@@ -21,6 +21,7 @@ import { useSingleShopPerformance } from "@/hooks/useTransactions";
 import { Loader2 } from "lucide-react";
 import { formatBalance } from "@/hooks/useBalances";
 import { toast } from "sonner";
+import Image from "next/image";
 
 function ShopCard({ shop }: { shop: MyShop }) {
   const { theme } = shop;
@@ -36,12 +37,12 @@ function ShopCard({ shop }: { shop: MyShop }) {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img
+          <Image
             src={shop.profile_image_url}
             alt={shop.name}
             width={36}
             height={36}
-            className="rounded-full"
+            className="rounded-full object-cover"
           />
           <Link href={`/shops/${shop.id}`}>
             <h1 className="text-base font-semibold text-background">
@@ -62,7 +63,7 @@ function ShopCard({ shop }: { shop: MyShop }) {
                 </p>
               </DrawerTitle>
               <DrawerDescription className="flex items-center justify-center">
-                <img
+                <Image
                   src={qrMock.src}
                   alt="qr"
                   width={200}
@@ -94,7 +95,7 @@ function ShopCard({ shop }: { shop: MyShop }) {
                   toast.success("Link copied to clipboard");
                 }}
               >
-                Copy Link
+                Copy ID
                 <IconCopy className="size-4" />
               </Button>
             </DrawerFooter>

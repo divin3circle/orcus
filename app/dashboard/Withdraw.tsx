@@ -31,7 +31,7 @@ function Withdraw() {
   };
 
   return (
-    <div className="border border-foreground/30 rounded-xl p-2 h-auto xl:h-[45%]">
+    <div className="border border-foreground/30 rounded-xl p-2 h-auto">
       <h1 className="text-base font-semibold mt-2">Withdraw</h1>
       <div className="flex items-center justify-between mt-2">
         <p className="text-sm text-foreground/80">Withdrawal Limit</p>
