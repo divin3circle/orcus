@@ -1,36 +1,146 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Orcus - Decentralized Payment Platform
 
-## Getting Started
+> Financial inclusion for Africa through Hedera blockchain
 
-First, run the development server:
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- Go 1.24+
+- PostgreSQL 14+
+- Hedera Testnet Account
+
+### Installation
+
+#### Backend
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd backend
+go mod download
+go run main.go
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+#### Frontend
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📱 Features
 
-## Learn More
+### For Users
 
-To learn more about Next.js, take a look at the following resources:
+- Buy KES tokens with M-Pesa
+- Pay at merchant shops
+- Join marketing campaigns
+- Track transaction history
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### For Merchants
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Manage multiple shops
+- Create custom campaigns
+- Track income and analytics
+- Withdraw to M-Pesa or wallets
 
-## Deploy on Vercel
+## Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Frontend**: Next.js 15 + Tailwind CSS
+- **Backend**: Go + Chi Router
+- **Database**: PostgreSQL
+- **Blockchain**: Hedera (Hiero SDK)
+- **Mobile**: React Native
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Key Components
+
+### Token System
+
+- KES tokens on Hedera network
+- 2 decimal places (100 = 1 KES)
+- Automatic token association
+
+### Payment Flow
+
+1. User buys tokens via M-Pesa
+2. Tokens transferred to Hedera account
+3. User pays merchant by shop ID
+4. Transaction recorded on blockchain
+5. Real-time notifications via Hedera Topics
+
+### Campaign System
+
+- Merchants create custom token campaigns
+- Automatic token generation
+- Track participants and distribution
+- End campaigns and notify users
+
+## Tech Stack
+
+**Frontend**
+
+- Next.js 15
+- Tailwind CSS
+- React Query
+- Zustand
+- Recharts
+
+**Backend**
+
+- Go 1.24
+- Chi Router
+- PostgreSQL
+- Hedera SDK
+- JWT Auth
+
+**Mobile**
+
+- React Native
+- M-Pesa Integration
+- Hedera SDK
+
+## Security
+
+- Bcrypt password hashing
+- JWT authentication
+- Encrypted private keys
+- Transaction validation
+- HTTPS encryption
+
+## Transaction Fees
+
+- 0.5% of transaction amount
+- Minimum: 0 KES (for ≤ 100 KES)
+- Transparent fee structure
+
+## Impact
+
+**Financial Inclusion**
+
+- Low-cost transactions
+- Fast settlement (3-5 seconds)
+- Mobile-first approach
+- M-Pesa integration
+- Blockchain transparency
+
+## Dashboard Features
+
+- Total income tracking
+- Withdrawal management
+- Shop performance analytics
+- Campaign management
+- Transaction history
+
+## Future Enhancements
+
+- Multi-currency support
+- Advanced loyalty programs
+- Business intelligence
+- API marketplace
+- Cross-border payments
+
+## License
+
+MIT License
+
+---
