@@ -60,6 +60,64 @@ Orcus provides a complete ecosystem combining:
 
 ## Key Features
 
+### Stablecoin Studio
+
+Stablecoin Studio Utilization: The KES stablecoin was minted using Hedera Stablecoin Studio, a
+dedicated tool within the Hedera ecosystem designed for compliant stablecoin issuance. This
+studio facilitates the creation of fully backed, fiat-pegged tokens with built-in governance
+features, ensuring adherence to best practices for reserve management and auditability.
+
+#### Peg Maintenance:
+
+The 1:1 peg to the Kenyan Shilling remains intact, with 100 KES token units representing 1 KES
+in fiat value (accounting for 2 decimal places). Stablecoin Studio's configuration enforces this
+parity through automated minting and burning protocols, directly tied to verified fiat inflows
+and outflows via M-Pesa integrations.
+
+#### Token Specifications:
+
+As configured in Stablecoin Studio, the KES token inherits Hedera Token Service (HTS) capabilities,
+including atomic transfers, scheduled transactions, and royalty enforcement, while adding
+stablecoin-specific features like reserve attestation.
+
+#### Refined Conversion and Custody Process
+
+Fiat-to-Token Minting: Upon M-Pesa payment confirmation, the Orcus backend invokes Stablecoin Studio's
+minting API to issue tokens proportionally to the fiat amount received (net of fees). Fiat reserves are
+custodied in a segregated account, with Stablecoin Studio's oracle integration enabling real-time
+verification of reserve sufficiency to maintain the peg.
+
+#### Token-to-Fiat
+
+Redemption: Withdrawal requests trigger a burn operation via Stablecoin Studio, reducing circulating supply
+and releasing equivalent fiat to the recipient's M-Pesa account. This process leverages the studio's compliance
+hooks for transaction logging, facilitating easier reconciliation and reporting.
+
+#### Reserve Management:
+
+Stablecoin Studio's built-in tools support on-chain reserve proofs, allowing for transparent attestation of fiat
+backing. In production, this would integrate with third-party auditors to publish periodic reports, further
+mitigating trust risks.
+
+#### Enhanced Sustainability and Compliance Profile
+
+Sustainability Benefits: By utilizing Stablecoin Studio, the platform reduces development overhead for peg mechanisms
+and inherits Hedera's low-cost, high-throughput operations. This supports scalability for high-volume transactions
+in underbanked regions, with fees (0.5% per transaction, waived for ≤100 KES) funding ongoing reserve monitoring without
+compromising the 1:1 backing.
+
+#### Regulatory Alignment:
+
+Stablecoin Studio's design promotes compliance with global standards (e.g., ISO 20022 for financial messaging) and local
+Kenyan regulations via Central Bank of Kenya oversight on mobile money. It positions the KES token as a utility stablecoin
+within a closed-loop ecosystem, minimizing securities classification risks. Future expansions could incorporate studio
+features like multi-signature governance for reserve controls.
+
+#### Risk Controls:
+
+The studio's enforcement of mint/burn limits prevents over-issuance, while integration with Hedera Topics ensures real-time
+notifications of reserve status changes, enhancing user and merchant confidence.
+
 ### For Users (Mobile App)
 
 - **Token Purchase**: Buy KES tokens directly with M-Pesa(local mobile money provider)
