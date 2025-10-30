@@ -2,13 +2,28 @@
 
 > Financial inclusion for Africa through Hedera blockchain
 
+See [SUBMISSION.md](SUBMISSION.md) for more details.
+
+## Demo
+
+- [Hashgraph Certificate](https://hashgraphdev.com/courses/hashgraph-developer-course)
+- [Demo Website](https://orcus-mu.vercel.app/)
+- [Demo Android App](https://expo.dev/accounts/sylus.abel/projects/orcus-app/builds/530e3726-3788-4c69-a194-fc81da724b6d)
+- [Demo Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+- [Pitch Deck](https://pitch.com/v/orcus-bqaw99)
+
+## License
+
+MIT License
+
 ## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
 - Go 1.24+
-- PostgreSQL 14+
+- Docker
+- PostgreSQL 14+ ()
 - Hedera Testnet Account
 
 ### Installation
@@ -17,15 +32,18 @@
 
 ```bash
 cd backend
+cp .env.local .env # create .env file from .env.local
 go mod download
-go run main.go
+docker compose up -d # start database service
+go run main.go # run server in another terminal window
 ```
 
 #### Frontend
 
 ```bash
-npm install
-npm run dev
+cp .env.local .env # create .env file from .env.local
+pnpm install
+pnpm run dev
 ```
 
 ## 📱 Features
