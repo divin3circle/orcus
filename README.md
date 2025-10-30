@@ -6,11 +6,12 @@ See [SUBMISSION.md](SUBMISSION.md) for more details.
 
 ## Demo
 
-- [Hashgraph Certificate](https://hashgraphdev.com/courses/hashgraph-developer-course)
+- [Hashgraph Certificate](https://certs.hashgraphdev.com/a3a185fa-14d0-4762-a09d-4b5fd557b371.pdf)
 - [Demo Website](https://orcus-mu.vercel.app/)
 - [Demo Android App](https://expo.dev/accounts/sylus.abel/projects/orcus-app/builds/530e3726-3788-4c69-a194-fc81da724b6d)
 - [Demo Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
 - [Pitch Deck](https://pitch.com/v/orcus-bqaw99)
+- [Demo KES Stablecoin](https://hashscan.io/testnet/token/0.0.6883537)
 
 ## License
 
